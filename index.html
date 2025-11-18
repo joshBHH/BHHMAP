@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1a0f" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1a0f">
   <title>Buckeye Hunter Hub — Mobile Hunting Map</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="Icons/bhh-logo-180.png">
@@ -21,11 +21,16 @@
   <div id="app">
     <div id="map"></div>
 
+    <!-- Floating Layers button -->
     <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
-    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub logo"/></div>
 
-    <div id="stateBadge">State: <strong id="stateBadgeText">--</strong></div>
+    <!-- Logo -->
+    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
 
+    <!-- State badge -->
+    <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
+
+    <!-- Info panel (draggable) -->
     <section class="panel" id="infoPanel" style="display:none;">
       <h3 id="infoHandle">📋 Field Info</h3>
       <div class="row"><span>Sunrise</span><strong id="pSunrise" class="tag">--:--</strong></div>
@@ -36,6 +41,7 @@
       <p class="tag">Tip: start the Track Recorder to populate distance & duration.</p>
     </section>
 
+    <!-- Bottom menu -->
     <nav class="main-menu" id="mainMenu">
       <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
       <button id="menuAlmanac">Almanac</button>
@@ -45,60 +51,89 @@
       <button id="btnExport">Export</button>
       <button id="btnImport">Import</button>
       <button id="menuLocate">Locate Me</button>
-      <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx"/>
+      <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,application/xml">
     </nav>
 
+    <!-- Backdrop for sheets -->
     <div class="backdrop" id="sheetBackdrop"></div>
 
-    <!-- ALL SHEETS – copy from your original file (exact same) -->
-    <!-- Paste everything from <div class="sheet" id="basemapSheet"> down to the last </div> of moonSheet/scoreSheet -->
-    <!-- I’m putting the full sheets at the very end of this message so you can scroll down and copy them all at once -->
+    <!-- ==================== ALL SHEETS (100% complete) ==================== -->
+
+    <!-- Basemap Sheet -->
+    <div class="sheet" id="basemapSheet" aria-hidden="true">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Basemap</h4>
+      <div class="content">
+        <div class="option" data-basemap="hybrid"><div>🛰 Hybrid (default)</div><div>✓</div></div>
+        <div class="option" data-basemap="satellite"><div>📡 Satellite Only</div></div>
+        <div class="option" data-basemap="topo"><div>🗺 Topo</div></div>
+        <div class="option" data-basemap="basic"><div>🗺 Basic</div></div>
+      </div>
+    </div>
+
+    <!-- State Selection Sheet -->
+    <div class="sheet" id="stateSheet" aria-hidden="true">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Select State</h4>
+      <div class="content">
+        <label class="option"><input type="radio" name="bhhState" value="OH" checked> Ohio</label>
+        <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
+        <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
+        <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
+        <label class="option"><input type="radio" name="bhhState" value="KY"> Kentucky <span class="tag">soon</span></label>
+        <label class="option"><input type="radio" name="bhhState" value="WV"> West Virginia <span class="tag">soon</span></label>
+      </div>
+    </div>
+
+    <!-- Tools Sheet -->
+    <div class="sheet" id="toolsSheet" aria-hidden="true">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Tools</h4>
+      <div class="content">
+        <div class="option" id="btnTrack">▶ Start Track Recorder</div>
+        <div class="option" id="btnClearTrack">Clear Track</div>
+        <div class="option" id="btnScentCone">Scent Cone Overlay</div>
+        <div class="option" id="btnCompass">Compass Overlay</div>
+        <div class="option" id="btnInfoPanel">Show Field Info Panel</div>
+      </div>
+    </div>
+
+    <!-- Almanac / Hunt Score Sheet -->
+    <div class="sheet" id="almanacSheet" aria-hidden="true">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Today's Hunt Score</h4>
+      <div class="content">
+        <div class="row"><span>Moon Phase</span><strong id="moonPhase">--</strong></div>
+        <div class="row"><span>Illumination</span><strong id="moonIllum">--%</strong></div>
+        <div class="row"><span>Major Feeding</span><strong id="majorTimes">--</strong></div>
+        <div class="row"><span>Minor Feeding</span><strong id="minorTimes">--</strong></div>
+        <div class="row"><span>Overall Score</span><strong id="huntScore">Calculating…</strong></div>
+      </div>
+    </div>
+
+    <!-- Layers Sheet -->
+    <div class="sheet" id="layersSheet" aria-hidden="true">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>BHH Map Layers</h4>
+      <div class="content">
+        <label class="option"><input type="checkbox" id="togglePublic" checked> Public Land / Game Lands</label>
+        <label class="option"><input type="checkbox" id="toggleCounties"> County Lines & Labels</label>
+        <label class="option"><input type="checkbox" id="toggleWaterfowl"> Waterfowl Zones (OH only)</label>
+      </div>
+    </div>
+
+    <!-- Waypoints List Sheet (optional – you can add later) -->
+    <!-- Export / Import can stay in main menu -->
+
+    <!-- ==================== END OF SHEETS ==================== -->
 
   </div>
 
   <script type="module" src="main.js"></script>
-</body>
-</html>    </div>
-
-    <!-- State Badge -->
-    <div id="stateBadge" aria-live="polite"
-         style="position:fixed;left:12px;top:120px;z-index:1300;background:#14271a;border:1px solid #25432b;border-radius:10px;padding:6px 10px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:13px;color:#e7f1e8;cursor:grab">
-      State: <strong id="stateBadgeText">--</strong>
-    </div>
-
-    <!-- Info Panel -->
-    <section class="panel" id="infoPanel" style="display:none;">
-      <h3 id="infoHandle">📋 Field Info</h3>
-      <div class="row"><span>Sunrise</span><strong id="pSunrise" class="tag">--:--</strong></div>
-      <div class="row"><span>Sunset</span><strong id="pSunset" class="tag">--:--</strong></div>
-      <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
-      <div class="row"><span>Track Distance</span><strong id="pTrkDist" class="tag">0 m</strong></div>
-      <div class="row"><span>Track Duration</span><strong id="pTrkDur" class="tag">0:00</strong></div>
-      <p class="tag">Tip: start the Track Recorder to populate distance & duration.</p>
-    </section>
-
-    <!-- Bottom Menu -->
-    <nav class="main-menu" id="mainMenu">
-      <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
-      <button id="menuAlmanac">Almanac</button>
-      <button id="menuTools">Tools</button>
-      <button id="btnDeleteMode">Delete: Off</button>
-      <button id="menuState">State</button>
-      <button id="btnExport">Export</button>
-      <button id="btnImport">Import</button>
-      <button id="menuLocate">Locate Me</button>
-      <input type="file" id="fileImport" accept=".json,.geojson,.kml,.gpx,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,application/xml" style="display:none"/>
-    </nav>
-
-    <!-- Backdrop -->
-    <div class="backdrop" id="sheetBackdrop"></div>
-
-    <!-- All Sheets (same as your original, no changes here for brevity – copy from your file) -->
-    <!-- ... (insert all <div class="sheet"> blocks from your original HTML here) ... -->
-
-  </div>
-
-  <script type="module" src="/src/js/main.js"></script>
-  <!-- Your sw.js stays the same -->
 </body>
 </html>
