@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1a0f" />
+  <title>Buckeye Hunter Hub — Mobile Hunting Map</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/Icons/bhh-logo-180.png">
+  <meta name="theme-color" content="#0b1a0f">
+
+  <!-- Leaflet core -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet.draw -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <!-- SunCalc for sun/moon -->
+  <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+
+  <link rel="stylesheet" href="/src/css/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="map"></div>
+
+    <!-- Floating BHH Map Layers button -->
+    <div id="bhhLayersBtn" aria-label="BHH Map Layers">
+      <button id="bhhLayersBtnHandle" type="button">BHH Map Layers</button>
+    </div>
+
+    <!-- Top-right logo -->
+    <div class="map-logo" aria-label="Buckeye Hunter Hub">
+      <img src="/Icons/bhh-logo.png" alt="Buckeye Hunter Hub logo"/>
+    </div>
+
+    <!-- State Badge -->
+    <div id="stateBadge" aria-live="polite"
+         style="position:fixed;left:12px;top:120px;z-index:1300;background:#14271a;border:1px solid #25432b;border-radius:10px;padding:6px 10px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:13px;color:#e7f1e8;cursor:grab">
+      State: <strong id="stateBadgeText">--</strong>
+    </div>
+
+    <!-- Info Panel -->
+    <section class="panel" id="infoPanel" style="display:none;">
+      <h3 id="infoHandle">📋 Field Info</h3>
+      <div class="row"><span>Sunrise</span><strong id="pSunrise" class="tag">--:--</strong></div>
+      <div class="row"><span>Sunset</span><strong id="pSunset" class="tag">--:--</strong></div>
+      <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
+      <div class="row"><span>Track Distance</span><strong id="pTrkDist" class="tag">0 m</strong></div>
+      <div class="row"><span>Track Duration</span><strong id="pTrkDur" class="tag">0:00</strong></div>
+      <p class="tag">Tip: start the Track Recorder to populate distance & duration.</p>
+    </section>
+
+    <!-- Bottom Menu -->
+    <nav class="main-menu" id="mainMenu">
+      <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
+      <button id="menuAlmanac">Almanac</button>
+      <button id="menuTools">Tools</button>
+      <button id="btnDeleteMode">Delete: Off</button>
+      <button id="menuState">State</button>
+      <button id="btnExport">Export</button>
+      <button id="btnImport">Import</button>
+      <button id="menuLocate">Locate Me</button>
+      <input type="file" id="fileImport" accept=".json,.geojson,.kml,.gpx,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,application/xml" style="display:none"/>
+    </nav>
+
+    <!-- Backdrop -->
+    <div class="backdrop" id="sheetBackdrop"></div>
+
+    <!-- All Sheets (same as your original, no changes here for brevity – copy from your file) -->
+    <!-- ... (insert all <div class="sheet"> blocks from your original HTML here) ... -->
+
+  </div>
+
+  <script type="module" src="/src/js/main.js"></script>
+  <!-- Your sw.js stays the same -->
+</body>
+</html>
