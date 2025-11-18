@@ -1,15 +1,17 @@
-import './state-manager.js'; // Loads states + layers
-import './ui.js'; // All UI wiring (sheets, menu, etc.)
-import './map-init.js'; // Core map setup
-import './waypoints.js'; // Markers
-import './track.js'; // Track recorder
-import './wind.js'; // Wind + scent
-import './hunt-score.js'; // Almanac/score
-import './compass.js'; // Compass
-import './export-import.js'; // Export/Import
-import './info-panel.js'; // Field info draggable
+import { initMap, map } from './map.js';
+import { initUI, openSheet, closeSheets } from './ui.js';
+import { initStateManager, setState } from './states.js';
+import { initWaypoints } from './waypoints.js';
+import { initTrack } from './track.js';
+import { initWind } from './wind.js';
+import { initExportImport } from './export-import.js';
 
-// Init after DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-  initApp(); // From map-init.js
+  initMap();
+  initStateManager();
+  initUI();
+  initWaypoints();
+  initTrack();
+  initWind();
+  initExportImport();
 });
