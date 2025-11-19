@@ -87,3 +87,4 @@ html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-
 .wind-arrow{
   display:inline-block;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid var(--accent);transform:rotate(0deg);
 }
+.leaflet-control-zoom { margin-top: 120px !important; }
