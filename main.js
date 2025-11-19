@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // NEW: Shop Gear button (drives immediate sales)
   const shopBtn = document.createElement('button');
   shopBtn.textContent = 'Shop Gear';
+  shopBtn.dataset.shop = 'true';
   shopBtn.style.cssText = 'background:#00ff41;color:#000;font-weight:bold;flex:1;max-width:140px';
   shopBtn.onclick = () => window.open('https://buckeyehunterhub.com/shop', '_blank');
   document.getElementById('mainMenu').insertBefore(shopBtn, document.getElementById('btnExport'));
