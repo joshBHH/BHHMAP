@@ -1,17 +1,9 @@
-import { initMap, map } from './map.js';
-import { initUI, openSheet, closeSheets } from './ui.js';
-import { initStateManager, setState } from './states.js';
-import { initWaypoints } from './waypoints.js';
-import { initTrack } from './track.js';
-import { initWind } from './wind.js';
-import { initExportImport } from './export-import.js';
+import { initMap } from '/BHHMAP/map.js';
+import { initStates } from '/BHHMAP/states.js';
+import { initUI } from '/BHHMAP/ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
-  initStateManager();
+  initStates();
   initUI();
-  initWaypoints();
-  initTrack();
-  initWind();
-  initExportImport();
 });
