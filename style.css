@@ -49,6 +49,11 @@ html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-
   background:var(--accent);color:#000;font-weight:bold;
 }
 
+/* Radar toggle in Layers sheet */
+#toggleRadar{
+  accent-color:#00ff41;
+}
+
 /* Sheets */
 .panel,.sheet{
   background:var(--panel);border:1px solid #333;color:var(--text);box-shadow:var(--shadow);border-radius:12px;
