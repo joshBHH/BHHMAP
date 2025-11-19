@@ -12,53 +12,49 @@
 
 html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif}
 #map{position:fixed;inset:0;height:100dvh}
-.map-logo{position:fixed;right:12px;top:12px;z-index:1300;pointer-events:none}
-.map-logo img{height:var(--logo-size);border-radius:12px;background:rgba(0,0,0,0.7);padding:8px;box-shadow:var(--shadow)}
 
-.panel,.sheet,.main-menu button{
-  background:var(--panel);
-  border:1px solid #333;
-  color:var(--text);
-  box-shadow:var(--shadow);
+/* Push Leaflet zoom below everything so nothing covers it */
+.leaflet-top.leaflet-left{top:110px !important;left:12px !important}
+
+/* Layers button – top-left */
+#bhhLayersBtn{
+  position:fixed;top:12px;left:12px;z-index:1100;
+}
+#bhhLayersBtn button{
+  background:#222;border:1px solid var(--accent);color:var(--text);padding:10px 16px;border-radius:12px;font-weight:bold;font-size:14px;
 }
 
-/* BOTTOM MENU – back to original position & perfect spacing */
+/* Top-right container – State badge + logo */
+#topRightContainer{
+  position:fixed;top:12px;right:12px;z-index:1100;display:flex;gap:12px;align-items:center;
+}
+#stateBadge{
+  background:#000000dd;border:1px solid var(--accent);border-radius:12px;padding:8px 14px;font-size:14px;font-weight:bold;box-shadow:var(--shadow);
+}
+.map-logo img{
+  height:var(--logo-size);border-radius:12px;background:rgba(0,0,0,0.7);padding:8px;box-shadow:var(--shadow);
+}
+
+/* Bottom menu – perfect spacing */
 .main-menu{
-  position:fixed;
-  left:0;right:0;bottom:0;
-  z-index:1200;
-  display:flex;
-  gap:8px;                     /* perfect gap between buttons */
-  justify-content:space-around;
-  padding:10px 12px calc(10px + var(--safe-bottom));
-  background:linear-gradient(180deg,rgba(0,0,0,0.2),rgba(0,0,0,0.9));
-  backdrop-filter:blur(12px);
-  border-top:1px solid #333;
-  flex-wrap:wrap;              /* wraps cleanly on small phones */
+  position:fixed;left:0;right:0;bottom:0;z-index:1200;display:flex;gap:8px;justify-content:space-around;padding:10px 12px calc(10px + var(--safe-bottom));
+  background:linear-gradient(180deg,rgba(0,0,0,0.2),rgba(0,0,0,0.9));backdrop-filter:blur(12px);border-top:1px solid #333;flex-wrap:wrap;
 }
 .main-menu button{
-  flex:1;
-  max-width:140px;             /* keeps them small & tight */
-  padding:10px 6px;
-  font-size:13px;
-  background:#222;
-  border:1px solid var(--accent);
-  border-radius:12px;
-  color:var(--text);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  flex:1;max-width:140px;padding:10px 6px;font-size:13px;background:#222;border:1px solid var(--accent);border-radius:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-
-/* Special Shop Gear button – bright green, no squish */
 .main-menu button[data-shop]{
-  background:var(--accent);
-  color:#000;
-  font-weight:bold;
+  background:var(--accent);color:#000;font-weight:bold;
 }
 
-.wind-btn{color:var(--accent)}
-.sheet .grab{background:var(--accent)}
+/* Sheets & panels */
+.panel,.sheet{
+  background:var(--panel);border:1px solid #333;color:var(--text);box-shadow:var(--shadow);border-radius:12px;
+}
+.sheet .grab{background:var(--accent);height:4px;width:36px;border-radius:999px;margin:8px auto}
+.sheet .close-x{position:absolute;top:8px;right:12px;background:#222;border:1px solid #333;width:36px;height:36px;border-radius:50%;font-size:20px;line-height:34px}
 .tag{color:var(--accent);font-weight:bold}
-.option:active,.btn:active{background:var(--accent);color:#000}
-#stateBadge{background:#000000dd;border:1px solid var(--accent);border-radius:12px;padding:6px 12px;box-shadow:var(--shadow);position:fixed;left:12px;top:12px;z-index:1300}
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1199;display:none}
+.backdrop.show{display:block}
+.sheet{transform:translateY(110%);transition:transform .25s ease}
+.sheet.show{transform:translateY(0)}
