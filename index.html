@@ -20,30 +20,20 @@
   <div id="app">
     <div id="map"></div>
 
-    <!-- Map Layers button – top-left, high z-index, doesn't block zoom -->
-    <div id="bhhLayersBtn" style="position:fixed;top:12px;left:12px;z-index:1100">
+    <!-- Top-left Layers button -->
+    <div id="bhhLayersBtn">
       <button id="bhhLayersBtnHandle">BHH Map Layers</button>
     </div>
 
-    <!-- Logo + State badge side-by-side top-right -->
-    <div style="position:fixed;top:12px;right:12px;z-index:1100;display:flex;gap:12px;align-items:center">
-      <div id="stateBadge"><strong id="stateBadgeText">Ohio</strong></div>
+    <!-- Top-right: State badge + logo -->
+    <div id="topRightContainer">
+      <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
       <div class="map-logo"><img src="/BHHMAP/Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
     </div>
 
-    <!-- Info panel -->
-    <section class="panel" id="infoPanel" style="display:none;">
-      <h3 id="infoHandle">Field Info</h3>
-      <div class="row"><span>Sunrise</span><strong id="pSunrise">--:--</strong></div>
-      <div class="row"><span>Sunset</span><strong id="pSunset">--:--</strong></div>
-      <div class="row"><span>Day Length</span><strong id="pDay">--h --m</strong></div>
-      <div class="row"><span>Track Distance</span><strong id="pTrkDist">0 m</strong></div>
-      <div class="row"><span>Track Duration</span><strong id="pTrkDur">0:00</strong></div>
-    </section>
-
     <!-- Bottom menu -->
     <nav class="main-menu" id="mainMenu">
-      <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind</span></button>
+      <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span> Wind</button>
       <button id="menuAlmanac">Almanac</button>
       <button id="menuTools">Tools</button>
       <button id="btnDeleteMode">Delete: Off</button>
@@ -51,14 +41,24 @@
       <button id="btnExport">Export</button>
       <button id="btnImport">Import</button>
       <button id="menuLocate">Locate Me</button>
-      </button>
       <input type="file" id="fileImport" style="display:none">
     </nav>
 
     <div class="backdrop" id="sheetBackdrop"></div>
 
-    <!-- SHEETS (unchanged) -->
-    <!-- Paste your 5 sheets here exactly as before (basemapSheet, stateSheet, toolsSheet, almanacSheet, layersSheet) -->
+    <!-- ALL SHEETS (copy your 5 sheets here – basemap, state, tools, almanac, layers) -->
+    <!-- Example one – paste the rest exactly as you had them -->
+    <div class="sheet" id="layersSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>BHH Map Layers</h4>
+      <div class="content" style="padding:16px">
+        <label class="option"><input type="checkbox" checked> Public Land</label>
+        <label class="option"><input type="checkbox"> Counties</label>
+      </div>
+    </div>
+
+    <!-- Add your other 4 sheets here (stateSheet, almanacSheet, toolsSheet, basemapSheet) -->
 
   </div>
 
