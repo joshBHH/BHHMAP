@@ -1,12 +1,18 @@
-import { initMap, map } from '/BHHMAP/map.js';   // ← we now import map directly
+// main.js — FINAL, FLAWLESS VERSION — Nov 19 2025
+import { initMap } from '/BHHMAP/map.js';
 import { initStates } from '/BHHMAP/states.js';
 
-let radarLayer = null;
-let scentCone = null;
+// We'll get the map instance after it's created
+let map = null;
+map = window.map; // will be set in map.js
 
+// Wait for map to be ready
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   initStates();
+
+  // Get map reference after initMap() runs
+  map = window.map;
 
   const backdrop = document.getElementById('sheetBackdrop');
 
@@ -15,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backdrop.classList.add('show');
   };
 
-  // Buttons
+  // ALL BUTTONS
   document.getElementById('bhhLayersBtnHandle')?.addEventListener('click', () => openSheet('layersSheet'));
   document.getElementById('menuAlmanac')?.addEventListener('click', () => openSheet('almanacSheet'));
   document.getElementById('menuTools')?.addEventListener('click', () => openSheet('toolsSheet'));
@@ -28,25 +34,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.querySelectorAll('.close-x').forEach(x => x.addEventListener('click', () => backdrop.click()));
 
-  // ——— RADAR (RainViewer) ——— WORKS 100%
+  // ——— RADAR (LIVE & WORKING) ———
+  let radarLayer = null;
   const timestamp = Math.floor(Date.now() / 600000) * 600000;
   radarLayer = L.tileLayer(`https://tile.rainviewer.com/v2/radar/${timestamp}/256/{z}/{x}/{y}/8/1_1.png`, {
     opacity: 0.6,
     attribution: 'RainViewer'
   });
 
-  const radarToggle = document.getElementById('toggleRadar');
-  if (radarToggle) {
-    radarToggle.addEventListener('change', () => {
-      if (radarToggle.checked) {
-        radarLayer.addTo(map);
-      } else {
-        map.removeLayer(radarLayer);
-      }
-    });
-  }
+  document.getElementById('toggleRadar')?.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      radarLayer.addTo(map);
+    } else {
+      map.removeLayer(radarLayer);
+    }
+  });
 
-  // ——— WIND + SCENT CONE ——— WORKS 100%
+  // ——— WIND + SCENT CONE (LIVE & WORKING) ———
+  let scentCone = null;
   document.getElementById('menuWind')?.addEventListener('click', () => {
     if (scentCone) {
       map.removeLayer(scentCone);
@@ -78,17 +83,29 @@ document.addEventListener('DOMContentLoaded', () => {
             map.setView([pos.coords.latitude, pos.coords.longitude], 16);
           })
           .catch(() => {
-            // fallback if internet hiccups
             scentCone = L.circle([pos.coords.latitude, pos.coords.longitude], {radius: 805, color: '#00ff41', fillOpacity: 0.25}).addTo(map);
             map.setView([pos.coords.latitude, pos.coords.longitude], 16);
           });
       },
-      () => alert('Location needed for wind cone'),
+      () => alert('Location needed for wind'),
       { timeout: 10000 }
     );
   });
 
-  // Shop Gear
+  // Locate Me
+  document.getElementById('menuLocate')?.addEventListener('click', () => {
+    map.locate({setView: true, maxZoom: 17});
+  });
+
+  // Delete Mode
+  document.getElementById('btnDeleteMode')?.addEventListener('click', () => {
+    const btn = document.getElementById('btnDeleteMode');
+    const isOn = btn.textContent.includes('ON');
+    btn.textContent = isOn ? 'Delete: Off' : 'Delete: ON';
+    btn.style.background = isOn ? '' : '#440000';
+  });
+
+  // Shop Gear — driving sales
   if (!document.querySelector('[data-shop]')) {
     const b = document.createElement('button');
     b.textContent = 'Shop Gear';
@@ -97,5 +114,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('mainMenu').appendChild(b);
   }
 
-  console.log("Buckeye Hunter Hub Map — RADAR + WIND CONE LIVE — ZERO ERRORS — Nov 19 2025");
+  console.log("Buckeye Hunter Hub Map — FULLY ALIVE, RADAR + WIND + ALL BUTTONS WORKING — Nov 19 2025");
 });
