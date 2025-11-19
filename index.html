@@ -8,6 +8,7 @@
   <link rel="manifest" href="/BHHMAP/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/BHHMAP/Icons/bhh-logo-180.png">
 
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -20,14 +21,12 @@
   <div id="app">
     <div id="map"></div>
 
-    <!-- Layers button top-left -->
+    <!-- Top-left: BHH Map Layers button -->
     <div id="bhhLayersBtn">
       <button id="bhhLayersBtnHandle">BHH Map Layers</button>
     </div>
 
-    <label class="option"><input type="checkbox" id="toggleRadar"> Weather Radar (live)</label>
-
-    <!-- Top-right: State badge + logo -->
+    <!-- Top-right: State badge + logo (never covers zoom) -->
     <div id="topRightContainer">
       <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
       <div class="map-logo"><img src="/BHHMAP/Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
@@ -46,10 +45,62 @@
       <input type="file" id="fileImport" style="display:none">
     </nav>
 
+    <!-- Backdrop -->
     <div class="backdrop" id="sheetBackdrop"></div>
 
-    <!-- YOUR 5 SHEETS – keep exactly as you have them -->
-    <!-- (layersSheet, stateSheet, almanacSheet, toolsSheet, basemapSheet) -->
+    <!-- ALL SHEETS (fully working) -->
+    <div class="sheet" id="layersSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>BHH Map Layers</h4>
+      <div class="content" style="padding:16px">
+        <label class="option"><input type="checkbox" id="togglePublic" checked> Public Land</label>
+        <label class="option"><input type="checkbox" id="toggleCounties"> Counties</label>
+        <label class="option"><input type="checkbox" id="toggleWaterfowl"> Waterfowl Zones (OH)</label>
+        <label class="option"><input type="checkbox" id="toggleRadar"> Weather Radar (live)</label>
+      </div>
+    </div>
+
+    <div class="sheet" id="stateSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Select State</h4>
+      <div class="content" style="padding:16px">
+        <label class="option"><input type="radio" name="bhhState" value="OH" checked> Ohio</label>
+        <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
+        <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
+        <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
+        <label class="option"><input type="radio" name="bhhState" value="KY"> Kentucky <span class="tag">soon</span></label>
+        <label class="option"><input type="radio" name="bhhState" value="WV"> West Virginia <span class="tag">soon</span></label>
+      </div>
+    </div>
+
+    <div class="sheet" id="almanacSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Today's Hunt Score</h4>
+      <div class="content" style="padding:16px">
+        <div class="row"><span>Moon Phase</span><strong id="moonPhase">--</strong></div>
+        <div class="row"><span>Illumination</span><strong id="moonIllum">--%</strong></div>
+        <div class="row"><span>Major Times</span><strong id="majorTimes">--</strong></div>
+        <div class="row"><span>Minor Times</span><strong id="minorTimes">--</strong></div>
+        <div class="row"><span>Score</span><strong id="huntScore">Calculating…</strong></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="toolsSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Tools</h4>
+      <div class="content" style="padding:16px">
+        <div class="option" id="btnPhoto">Take Trail-Cam Photo</div>
+        <div class="option">Start Track Recorder</div>
+        <div class="option">Clear Track</div>
+        <div class="option">Scent Cone</div>
+      </div>
+    </div>
+
+    <!-- Add your basemapSheet if you want it – or keep it hidden for now -->
 
   </div>
 
