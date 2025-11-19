@@ -16,3 +16,4 @@ export function initMap() {
 
   console.log("Map initialized – Buckeye Hunter Hub v2");
 }
+window.map = map;  // ← makes map available to main.js
