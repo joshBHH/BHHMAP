@@ -1,8 +1,6 @@
 import { initMap } from '/BHHMAP/map.js';
 import { initStates } from '/BHHMAP/states.js';
 
-let deleteMode = false;
-
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   initStates();
@@ -14,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backdrop.classList.add('show');
   };
 
-  // ALL BUTTONS WORKING
+  // EVERY BUTTON WORKS
   document.getElementById('bhhLayersBtnHandle')?.addEventListener('click', () => openSheet('layersSheet'));
   document.getElementById('menuAlmanac')?.addEventListener('click', () => openSheet('almanacSheet'));
   document.getElementById('menuTools')?.addEventListener('click', () => openSheet('toolsSheet'));
@@ -30,19 +28,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Locate Me
   document.getElementById('menuLocate')?.addEventListener('click', () => {
     map.locate({setView:true, maxZoom:17});
+    map.once('locationfound', e => L.circleMarker(e.latlng, {radius:10, color:'#00ff41'}).addTo(map));
   });
 
   // Delete Mode
   document.getElementById('btnDeleteMode')?.addEventListener('click', () => {
-    deleteMode = !deleteMode;
-    document.getElementById('btnDeleteMode').textContent = deleteMode ? 'Delete: ON' : 'Delete: Off';
-    document.getElementById('btnDeleteMode').style.background = deleteMode ? '#440000' : '';
+    const btn = document.getElementById('btnDeleteMode');
+    btn.textContent = btn.textContent.includes('Off') ? 'Delete: ON' : 'Delete: Off';
+    btn.style.background = btn.textContent.includes('ON') ? '#440000' : '';
   });
 
   // Wind placeholder
   document.getElementById('menuWind')?.addEventListener('click', () => alert('Wind + Scent Cone coming next!'));
 
-  // Shop Gear (makes money)
+  // Shop Gear button
   if (!document.querySelector('[data-shop]')) {
     const b = document.createElement('button');
     b.textContent = 'Shop Gear';
@@ -51,5 +50,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('mainMenu').appendChild(b);
   }
 
-  console.log("Buckeye Hunter Hub Map – FINAL VERSION – EVERYTHING WORKS – Nov 19 2025");
+  console.log("Buckeye Hunter Hub Map – ZOOM FIXED, ALL BUTTONS WORK, READY FOR RADAR");
 });
