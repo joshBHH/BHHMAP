@@ -1,10 +1,9 @@
 :root{
-  --bg:#000000;               /* pure black background */
-  --panel:#1a1a1a;            /* dark gray cards */
-  --text:#ffffff;             /* bright white text */
-  --accent:#00ff41;           /* bright lime green accent (very visible on satellite) */
+  --bg:#000000;
+  --panel:#1a1a1a;
+  --text:#ffffff;
+  --accent:#00ff41;
   --subtle:#aaaaaa;
-  --muted:#333333;
   --danger:#ff4444;
   --shadow:0 8px 32px rgba(0,0,0,0.8);
   --safe-bottom:env(safe-area-inset-bottom,0px);
@@ -22,18 +21,44 @@ html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-
   color:var(--text);
   box-shadow:var(--shadow);
 }
+
+/* BOTTOM MENU – back to original position & perfect spacing */
 .main-menu{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:1200;
+  display:flex;
+  gap:8px;                     /* perfect gap between buttons */
+  justify-content:space-around;
+  padding:10px 12px calc(10px + var(--safe-bottom));
   background:linear-gradient(180deg,rgba(0,0,0,0.2),rgba(0,0,0,0.9));
   backdrop-filter:blur(12px);
-  padding:10px 12px calc(10px + var(--safe-bottom));
+  border-top:1px solid #333;
+  flex-wrap:wrap;              /* wraps cleanly on small phones */
 }
 .main-menu button{
+  flex:1;
+  max-width:140px;             /* keeps them small & tight */
+  padding:10px 6px;
+  font-size:13px;
   background:#222;
   border:1px solid var(--accent);
+  border-radius:12px;
   color:var(--text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
+
+/* Special Shop Gear button – bright green, no squish */
+.main-menu button[data-shop]{
+  background:var(--accent);
+  color:#000;
+  font-weight:bold;
+}
+
 .wind-btn{color:var(--accent)}
 .sheet .grab{background:var(--accent)}
 .tag{color:var(--accent);font-weight:bold}
 .option:active,.btn:active{background:var(--accent);color:#000}
-#stateBadge{background:#000000dd;border:1px solid var(--accent);border-radius:12px;padding:6px 12px;box-shadow:var(--shadow)}
+#stateBadge{background:#000000dd;border:1px solid var(--accent);border-radius:12px;padding:6px 12px;box-shadow:var(--shadow);position:fixed;left:12px;top:12px;z-index:1300}
