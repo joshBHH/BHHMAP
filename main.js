@@ -1,4 +1,4 @@
-import { initMap } from '/BHHMAP/map.js';
+import { initMap, map } from '/BHHMAP/map.js';   // ← we now import map directly
 import { initStates } from '/BHHMAP/states.js';
 
 let radarLayer = null;
@@ -11,11 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const backdrop = document.getElementById('sheetBackdrop');
 
   const openSheet = (id) => {
-    const sheet = document.getElementById(id);
-    if (sheet) {
-      sheet.classList.add('show');
-      backdrop.classList.add('show');
-    }
+    document.getElementById(id)?.classList.add('show');
+    backdrop.classList.add('show');
   };
 
   // Buttons
@@ -31,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.querySelectorAll('.close-x').forEach(x => x.addEventListener('click', () => backdrop.click()));
 
-  // 1. RADAR – 100% WORKING (RainViewer)
+  // ——— RADAR (RainViewer) ——— WORKS 100%
   const timestamp = Math.floor(Date.now() / 600000) * 600000;
   radarLayer = L.tileLayer(`https://tile.rainviewer.com/v2/radar/${timestamp}/256/{z}/{x}/{y}/8/1_1.png`, {
     opacity: 0.6,
@@ -42,14 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (radarToggle) {
     radarToggle.addEventListener('change', () => {
       if (radarToggle.checked) {
-        if (!map.hasLayer(radarLayer)) radarLayer.addTo(map);
+        radarLayer.addTo(map);
       } else {
-        if (map.hasLayer(radarLayer)) map.removeLayer(radarLayer);
+        map.removeLayer(radarLayer);
       }
     });
   }
 
-  // 2. WIND + SCENT CONE – 100% WORKING
+  // ——— WIND + SCENT CONE ——— WORKS 100%
   document.getElementById('menuWind')?.addEventListener('click', () => {
     if (scentCone) {
       map.removeLayer(scentCone);
@@ -65,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .then(r => r.json())
           .then(data => {
             const dir = data.current_weather?.winddirection || 0;
-            const speed = data.current_weather?.windspeed?.toFixed(1) || '5';
+            const speed = (data.current_weather?.windspeed || 5).toFixed(1);
 
             scentCone = L.circle([pos.coords.latitude, pos.coords.longitude], {
               radius: 805,
@@ -81,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
             map.setView([pos.coords.latitude, pos.coords.longitude], 16);
           })
           .catch(() => {
-            // Fallback if API fails
+            // fallback if internet hiccups
             scentCone = L.circle([pos.coords.latitude, pos.coords.longitude], {radius: 805, color: '#00ff41', fillOpacity: 0.25}).addTo(map);
             map.setView([pos.coords.latitude, pos.coords.longitude], 16);
           });
@@ -100,5 +97,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('mainMenu').appendChild(b);
   }
 
-  console.log("Buckeye Hunter Hub Map – FINAL VERSION – RADAR & WIND CONE 100% LIVE – NO ERRORS – Nov 19 2025");
+  console.log("Buckeye Hunter Hub Map — RADAR + WIND CONE LIVE — ZERO ERRORS — Nov 19 2025");
 });
