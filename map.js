@@ -1,5 +1,6 @@
 export let map;
 
+export let map;
 export function initMap() {
   map = L.map('map').setView([40.4173, -82.9071], 7);
 
