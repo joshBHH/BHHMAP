@@ -8,7 +8,6 @@
   <link rel="manifest" href="/BHHMAP/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/BHHMAP/Icons/bhh-logo-180.png">
 
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -21,13 +20,14 @@
   <div id="app">
     <div id="map"></div>
 
+    <!-- Layers button – added ID so it works -->
     <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
     <div class="map-logo"><img src="/BHHMAP/Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
 
     <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
 
     <section class="panel" id="infoPanel" style="display:none;">
-      <h3 id="infoHandle">📋 Field Info</h3>
+      <h3 id="infoHandle">Field Info</h3>
       <div class="row"><span>Sunrise</span><strong id="pSunrise" class="tag">--:--</strong></div>
       <div class="row"><span>Sunset</span><strong id="pSunset" class="tag">--:--</strong></div>
       <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
@@ -49,12 +49,12 @@
 
     <div class="backdrop" id="sheetBackdrop"></div>
 
-    <!-- ALL SHEETS – full working set -->
+    <!-- ALL SHEETS -->
     <div class="sheet" id="basemapSheet"><div class="grab"></div><button class="close-x">×</button><h4>Basemap</h4><div class="content">
-      <div class="option" data-basemap="hybrid"><div>🛰 Hybrid (default)</div><div>✓</div></div>
-      <div class="option" data-basemap="satellite"><div>📡 Satellite Only</div></div>
-      <div class="option" data-basemap="topo"><div>🗺 Topo</div></div>
-      <div class="option" data-basemap="basic"><div>🗺 Basic</div></div>
+      <div class="option" data-basemap="hybrid"><div>Hybrid (default)</div><div>✓</div></div>
+      <div class="option" data-basemap="satellite"><div>Satellite Only</div></div>
+      <div class="option" data-basemap="topo"><div>Topo</div></div>
+      <div class="option" data-basemap="basic"><div>Basic</div></div>
     </div></div>
 
     <div class="sheet" id="stateSheet"><div class="grab"></div><button class="close-x">×</button><h4>Select State</h4><div class="content">
@@ -67,11 +67,11 @@
     </div></div>
 
     <div class="sheet" id="toolsSheet"><div class="grab"></div><button class="close-x">×</button><h4>Tools</h4><div class="content">
-      <div class="option" id="btnTrack">▶ Start Track Recorder</div>
-      <div class="option" id="btnClearTrack">Clear Track</div>
-      <div class="option" id="btnScentCone">Scent Cone</div>
-      <div class="option" id="btnCompass">Compass Overlay</div>
-      <div class="option" id="btnInfoPanel">Show Field Info</div>
+      <div class="option">Start Track Recorder</div>
+      <div class="option">Clear Track</div>
+      <div class="option">Scent Cone</div>
+      <div class="option">Compass</div>
+      <div class="option">Field Info Panel</div>
     </div></div>
 
     <div class="sheet" id="almanacSheet"><div class="grab"></div><button class="close-x">×</button><h4>Today's Hunt Score</h4><div class="content">
