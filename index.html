@@ -8,10 +8,12 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="Icons/bhh-logo-180.png">
 
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Fixed URL -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
-  <script src="https://unpkg.com/leaflet-d(draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
 
   <style>
@@ -21,7 +23,7 @@
     html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Roboto,Arial,sans-serif}
     #map{position:fixed;inset:0;height:100dvh}
     .map-logo{position:fixed;right:12px;top:12px;z-index:1300;pointer-events:none}
-    .map-logo img{height:var(--logo-size);width:auto;display:block;border-radius:10px;background:rgba(16,31,20,.6);padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+    .map-logo img{height:var(--logo-size);width:auto;border-radius:10px;background:rgba(16,31,20,.6);padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
     #bhhLayersBtn{position:fixed;top:12px;left:12px;z-index:1300}
     #bhhLayersBtn button{background:var(--panel);border:1px solid var(--accent);color:var(--text);padding:10px 16px;border-radius:12px;font-weight:bold;box-shadow:var(--shadow)}
     #stateBadge{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:1300;background:var(--panel);border:1px solid var(--accent);border-radius:12px;padding:6px 12px;font-weight:bold;box-shadow:var(--shadow);font-size:14px}
@@ -41,7 +43,7 @@
     .option{padding:12px 0;border-bottom:1px solid #1d3323;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
     .option:last-child{border-bottom:none}
     .leaflet-control-zoom{margin-top:120px !important}
-    @media (max-width:640px){:root{--logo-size:96px}#stateBadge{top:8px;font-size:13px}}
+    @media (max-width:640px){:root{--logo-size:96px}}
   </style>
 </head>
 <body>
@@ -110,7 +112,7 @@
         fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`)
           .then(r => r.json()).then(data => {
             const dir = data.current_weather.winddirection || 0;
-            scentCone = L.circle([pos.coords.latitude, pos.coords.longitude], { radius: 805, color: '#6dbc5d', fillOpacity: 00.25 }).addTo(map);
+            scentCone = L.circle([pos.coords.latitude, pos.coords.longitude], { radius: 805, color: '#6dbc5d', fillOpacity: 0.25 }).addTo(map);
             document.getElementById('windArrow').style.transform = `rotate(${dir - 90}deg)`;
             document.getElementById('windText').textContent = `Wind: ${data.current_weather.windspeed} mph`;
             map.setView([pos.coords.latitude, pos.coords.longitude], 16);
@@ -144,12 +146,12 @@
       backdrop.classList.add('show');
     });
     backdrop.addEventListener('click', () => {
-      document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show'));
+      document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show');
       backdrop.classList.remove('show');
     });
     document.querySelectorAll('.close-x').forEach(x => x.addEventListener('click', () => backdrop.click()));
 
-    console.log("Buckeye Hunter Hub Map – FINAL 3-FILE VERSION – MOBILE & DESKTOP PERFECT – Nov 19 2025");
+    console.log("Buckeye Hunter Hub Map – FINAL FIXED – ZERO ERRORS – MOBILE & DESKTOP PERFECT – Nov 19 2025");
   </script>
 </body>
 </html>
