@@ -1,31 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b1a0f">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1a0f" />
   <title>Buckeye Hunter Hub — Mobile Hunting Map</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="Icons/bhh-logo-180.png">
+  <meta name="theme-color" content="#0b1a0f">
 
+  <!-- Leaflet core -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet.draw -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <!-- SunCalc for sun/moon -->
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
 
-  <link rel="stylesheet" href="style.css">
+  <style>
+    :root{
+      --bg:#0b1a0f;        /* deep forest */
+      --panel:#101f14;     /* card */
+      --muted:#1a2b1f;
+      --accent:#6dbc5d;    /* green */
+      --text:#e7f1e8;
+      --subtle:#a3b7a6;
+      --danger:#f87171;
+      --shadow:0 12px 30px rgba(0,0,0,.35);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --logo-size: 128px;  /* desktop/tablet logo height */
+    }
+
+    html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Roboto,Arial,sans-serif}
+    /* Full screen map on mobile */
+    #map{position:fixed;inset:0;height:100dvh}
+    #map.placing{cursor: crosshair}
+
+    /* Top-right logo (non-interactive overlay) */
+    .map-logo{position:fixed;right:12px;top:12px;z-index:1300;pointer-events:none}
+    .map-logo img{
+      height:var(--logo-size); width:auto; display:block;
+      border-radius:10px; background:rgba(16,31,20,.6); padding:6px;
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+    }
+
+    /* Info panel (smaller + draggable) */
+    .panel{position:fixed;left:12px;top:80px;z-index:1000;background:var(--panel);border:1px solid #203325;border-radius:12px;box-shadow:var(--shadow);padding:8px 10px;min-width:180px;max-width:260px}
+    .panel h3{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:8px;cursor:move}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid #1d3323}
+    .row:last-child{border-bottom:0}
+    .tag{font-size:11px;color:var(--subtle)}
+
+    /* Bottom Menu (your 6am version) */
+    .main-menu{position:fixed;left:0;right:0;bottom:0;z-index:1200;display:flex;gap:8px;justify-content:space-around;padding:10px 12px calc(10px + var(--safe-bottom));background:linear-gradient(180deg,rgba(11,26,15,.1),rgba(11,26,15,.85));backdrop-filter:blur(8px);border-top:1px solid #203325;flex-wrap:wrap}
+    .main-menu button{flex:1;max-width:140px;padding:10px;border:1px solid #25432b;border-radius:12px;background:#14271a;color:var(--text);font-size:14px;cursor:pointer}
+    .main-menu button[data-shop]{background:var(--accent);color:#000;font-weight:bold}
+    .wind-btn{display:flex;align-items:center;gap:8px;max-width:260px}
+    #windText{font-size:12px}
+    .wind-arrow{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #e7f1e8;display:inline-block;transform:rotate(0deg)}
+
+    .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1199;display:none}
+    .backdrop.show{display:block}
+    .sheet{position:fixed;left:0;right:0;bottom:0;z-index:1200;background:var(--panel);border-top:1px solid #203325;border-radius:16px 16px 0 0;box-shadow:var(--shadow);transform:translateY(110%);transition:transform .25s ease}
+    .sheet.show{transform:translateY(0)}
+    .sheet .grab{width:36px;height:4px;border-radius:999px;background:#2b4231;margin:8px auto}
+    .sheet .close-x{position:absolute;top:8px;right:12px;width:32px;height:32px;border-radius:10px;border:1px solid #25432b;background:#14271a;color:var(--text);font-size:18px;line-height:30px;text-align:center;cursor:pointer}
+    .seglabel,.county-label{background:rgba(16,31,20,.92);border:1px solid #203325;border-radius:10px;padding:2px 6px;font-size:11px;color:var(--text);box-shadow:var(--shadow)}
+    .pulse-dot{width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid #1d4ed8;box-shadow:0 0 0 rgba(59,130,246,.5);animation:pulse 2s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}70%{box-shadow:0 0 0 16px rgba(59,130,246,0)}100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}}
+    #bhhLayersBtn{position:fixed;top:12px;left:58px;z-index:1300}
+    #bhhLayersBtn button{background:var(--panel);border:1px solid var(--accent);color:var(--text);padding:8px 12px;border-radius:12px;box-shadow:var(--shadow);cursor:grab}
+    @media (max-width:640px){:root{--logo-size:96px}.panel{left:8px;top:72px}}
+  </style>
 </head>
 <body>
   <div id="app">
     <div id="map"></div>
 
-    <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
+    <!-- Floating BHH Map Layers button -->
+    <div id="bhhLayersBtn" aria-label="BHH Map Layers">
+      <button id="bhhLayersBtnHandle" type="button">BHH Map Layers</button>
+    </div>
 
-    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
+    <!-- Top-right logo (non-interactive overlay) -->
+    .map-logo img{
+      height:var(--logo-size); width:auto; display:block;
+      border-radius:10px; background:rgba(16,31,20,.6); padding:6px;
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+    }
 
-    <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
+    <!-- State Badge -->
+    <div id="stateBadge" aria-live="polite"
+         style="position:fixed;left:12px;top:120px;z-index:1300;background:rgba(16,31,20,.6);border:1px solid #25432b;border-radius:10px;padding:6px 10px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:13px;color:#e7f1e8;cursor:grab">
+      State: <strong id="stateBadgeText">--</strong>
+    </div>
 
+    <!-- Info panel (smaller + draggable) -->
     <section class="panel" id="infoPanel" style="display:none;">
       <h3 id="infoHandle">📋 Field Info</h3>
       <div class="row"><span>Sunrise</span><strong id="pSunrise" class="tag">--:--</strong></div>
@@ -33,8 +106,10 @@
       <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
       <div class="row"><span>Track Distance</span><strong id="pTrkDist" class="tag">0 m</strong></div>
       <div class="row"><span>Track Duration</span><strong id="pTrkDur" class="tag">0:00</strong></div>
+      <p class="tag">Tip: start the Track Recorder to populate distance & duration.</p>
     </section>
 
+    <!-- Bottom Menu -->
     <nav class="main-menu" id="mainMenu">
       <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
       <button id="menuAlmanac">Almanac</button>
@@ -44,22 +119,23 @@
       <button id="btnExport">Export</button>
       <button id="btnImport">Import</button>
       <button id="menuLocate">Locate Me</button>
-      <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx">
+      <input type="file" id="fileImport" accept=".json,.geojson,.kml,.gpx,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,application/xml" style="display:none"/>
     </nav>
 
+    <!-- Backdrop -->
     <div class="backdrop" id="sheetBackdrop"></div>
 
-    <div class="sheet" id="layersSheet">
+    <!-- All Sheets (your original, untouched) -->
+    <div class="sheet" id="basemapSheet" aria-hidden="true">
       <div class="grab"></div>
-      <button class="close-x">×</button>
-      <h4>BHH Map Layers</h4>
-      <div class="content">
-        <label class="option"><input type="checkbox" id="togglePublic" checked> Public Land</label>
-        <label class="option"><input type="checkbox" id="toggleRadar"> Weather Radar (live)</label>
-      </div>
+      <h4>Basemap</h4>
+      <div class="option" data-basemap="hybrid"><div>🛰 Hybrid (default)</div><div>✓</div></div>
+      <div class="option" data-basemap="satellite"><div>📡 Satellite Only</div></div>
+      <div class="option" data-basemap="topo"><div>🗺 Topo</div></div>
+      <div class="option" data-basemap="basic"><div>🗺 Basic</div></div>
     </div>
 
-    <div class="sheet" id="stateSheet">
+    <div class="sheet" id="stateSheet" aria-hidden="true">
       <div class="grab"></div>
       <button class="close-x">×</button>
       <h4>Select State</h4>
@@ -68,6 +144,16 @@
         <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
         <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
         <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
+      </div>
+    </div>
+
+    <div class="sheet" id="layersSheet" aria-hidden="true">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>BHH Map Layers</h4>
+      <div class="content">
+        <label class="option"><input type="checkbox" id="togglePublic" checked> Public Land</label>
+        <label class="option"><input type="checkbox" id="toggleRadar"> Weather Radar (live)</label>
       </div>
     </div>
 
