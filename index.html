@@ -20,10 +20,6 @@
   <!-- SunCalc for sun/moon -->
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
 
-  <!-- Firebase for login -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -32,7 +28,7 @@
 
     <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
 
-    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub logo"/></div>
+    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
 
     <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
 
@@ -43,7 +39,6 @@
       <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
       <div class="row"><span>Track Distance</span><strong id="pTrkDist" class="tag">0 m</strong></div>
       <div class="row"><span>Track Duration</span><strong id="pTrkDur" class="tag">0:00</strong></div>
-      <p class="tag">Tip: start the Track Recorder to populate distance & duration.</p>
     </section>
 
     <nav class="main-menu" id="mainMenu">
@@ -55,7 +50,6 @@
       <button id="btnExport">Export</button>
       <button id="btnImport">Import</button>
       <button id="menuLocate">Locate Me</button>
-      <button id="hamburgerMenu" style="background: none; border: none; cursor: pointer;">☰</button>
       <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx">
     </nav>
 
@@ -80,27 +74,6 @@
         <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
         <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
         <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
-      </div>
-    </div>
-
-    <div class="sheet" id="hamburgerSheet">
-      <div class="grab"></div>
-      <button class="close-x">×</button>
-      <h4>Menu</h4>
-      <div class="content">
-        <div class="option" id="importOption">Import</div>
-        <div class="option" id="exportOption">Export</div>
-        <div class="option" id="profileOption">Profile / Login</div>
-      </div>
-    </div>
-
-    <div class="sheet" id="loginSheet">
-      <div class="grab"></div>
-      <button class="close-x">×</button>
-      <h4>Login</h4>
-      <div class="content">
-        <button id="googleLogin">Google</button>
-        <button id="emailLogin">Email</button>
       </div>
     </div>
 
