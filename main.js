@@ -2,7 +2,7 @@
  * MAP & BASELAYERS
  *******************/
 // [BHH: MAP INIT START]
-const map = L.map('map').setView([40.4173, --82.9071], 7);
+const map = L.map('map').setView([40.4173, -82.9071], 7);
 
 // MapTiler basemaps (replace key if needed)
 const basic = L.tileLayer('https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=VLOZCnjQYBtgpZ3BXBK3', { attribution: '&copy; MapTiler & OpenStreetMap contributors' });
@@ -312,7 +312,7 @@ loadIndianaCounties();
 
 map.on('zoomend', refreshIndianaCountyLabels);
 map.on('overlayadd',   (e)=>{ if(e.layer===indianaCounties){ indianaCountyLabels.addTo(map); refreshIndianaCountyLabels(); } });
-map.on('overlayremove',(e)=>{ if(e.layer===indianaCounties){ map.removeLayer(indianaCountyLabels); } });
+map.on('overlayremove',(e)=>{ if(e.layer===indianaCounties){ indianaCountyLabels.clearLayers(); } });
 // [BHH: OVERLAYS – IN COUNTIES END]
 
 
@@ -408,6 +408,7 @@ document.querySelectorAll('.sheet .option').forEach(opt=>{
 });
 // [BHH: SHEET – BASEMAP & OVERLAYS END]
 
+
 /*******************
  * MARKERS (WAYPOINTS) + PHOTO NOTES
  *******************/
@@ -471,6 +472,7 @@ function saveMarkers(){ localStorage.setItem(STORAGE_MARK, JSON.stringify(serial
 map.on('click', e=>{ if(!activeType) return; addMarker(e.latlng, activeType); setActiveType(null); refreshWaypointsUI(); });
 // [BHH: WAYPOINTS – DATA END]
 
+
 /*******************
  * TRACK RECORDER
  *******************/
@@ -496,6 +498,7 @@ function exportGPX(){ if(!trackPoints.length){ alert('No track to export'); retu
 
 loadTrack();
 // [BHH: TRACK END]
+
 
 /*******************
  * WIND (live) + SCENT CONE
@@ -803,43 +806,35 @@ compEnable.onclick = ()=> enableCompass();
 compAnchorRadios.forEach(r=> r.addEventListener('change', ()=> updateGuideLine()));
 map.on('moveend', ()=>{ const mode = (compAnchorRadios.find(r=>r.checked)||{}).value || 'gps'; if(mode==='center') updateGuideLine(); });
 // [BHH: COMPASS END]
-    
+
+/*******************
+ * STATE LOGIC (OH / IN)
+ *******************/
 // [BHH: STATE – LOGIC START]
 const STORAGE_STATE = 'bhh_state_code';
 
 // Elements
-const stateBadgeText = document.getElementById('stateBadgeText');  // <strong id="stateBadgeText">
-const stateSelect    = document.getElementById('stateSelect');     // Basemap sheet <select>
-const stateApplyBtn  = document.getElementById('stateApply');      // Basemap sheet "Set" button
-const menuStateBtn   = document.getElementById('menuState');       // bottom bar “State”
+const stateBadgeText = document.getElementById('stateBadgeText');
+const stateSelect    = document.getElementById('stateSelect');
+const stateApplyBtn  = document.getElementById('stateApply');
+const menuStateBtn   = document.getElementById('menuState');
 const stateSheetRadios = Array.from(document.querySelectorAll('input[name="bhhState"]'));
 
-// Per-state map centers/zoom (add more later)
+// Per-state map centers/zoom
 const STATE_CFG = {
   OH: { name: 'Ohio',   center: [40.4173, -82.9071], zoom: 7 },
   IN: { name: 'Indiana',center: [39.905,  -86.2816], zoom: 7 },
-  // MI: { name:'Michigan', center:[44.3, -85.6], zoom: 6 },
-  // PA: { name:'Pennsylvania', center:[40.9, -77.8], zoom: 7 },
-  // KY: { name:'Kentucky', center:[37.8, -85.8], zoom: 7 },
-  // WV: { name:'West Virginia', center:[38.6, -80.6], zoom: 7 },
 };
 
-// Keep local copy in sync with storage/UI
 let currentState = (localStorage.getItem(STORAGE_STATE) || 'OH').toUpperCase();
 
 function syncStateUI() {
-  // Badge
   if (stateBadgeText) stateBadgeText.textContent = currentState;
-
-  // Basemap sheet <select>
   if (stateSelect) stateSelect.value = currentState;
-
-  // State sheet radios
   stateSheetRadios.forEach(r => { r.checked = (r.value.toUpperCase() === currentState); });
 }
 
 function onStateChanged() {
-  // remember whether the user wanted counties visible
   const wantedCounties =
     ovlCounties && (
       ovlCounties.checked ||
@@ -847,11 +842,9 @@ function onStateChanged() {
       map.hasLayer(indianaCounties)
     );
 
-  // center/zoom
   const cfg = STATE_CFG[currentState];
   if (cfg) map.setView(cfg.center, cfg.zoom);
 
-  // label text
   const lblPublic    = document.getElementById('lblPublic');
   const lblCounties  = document.getElementById('lblCounties');
   const lblWaterfowl = document.getElementById('lblWaterfowl');
@@ -859,19 +852,16 @@ function onStateChanged() {
   if (lblPublic)    lblPublic.textContent    = (currentState === 'IN') ? 'Indiana Public Hunting (coming soon)' : 'Ohio Public Hunting';
   if (lblWaterfowl) lblWaterfowl.textContent = (currentState === 'IN') ? 'Waterfowl Zones (coming soon)' : 'Waterfowl Zones';
 
-  // enable/disable OH-only overlays
   const isOH = currentState === 'OH';
   ovlOhio.disabled      = !isOH;
   ovlWaterfowl.disabled = !isOH;
   ovlCounties.disabled  = false;
 
-  // remove any counties layers from the previous state
   if (map.hasLayer(ohioCounties))         map.removeLayer(ohioCounties);
   if (map.hasLayer(countyLabels))         map.removeLayer(countyLabels);
   if (map.hasLayer(indianaCounties))      map.removeLayer(indianaCounties);
   if (map.hasLayer(indianaCountyLabels))  map.removeLayer(indianaCountyLabels);
 
-  // re-add the correct one if the user wanted counties visible
   if (wantedCounties) {
     if (currentState === 'IN') {
       indianaCounties.addTo(map);
@@ -884,7 +874,6 @@ function onStateChanged() {
     }
   }
 
-  // sync the checkbox to what’s actually on the map
   syncOverlayChecks();
 }
 
@@ -896,23 +885,20 @@ function setState(code, save = true) {
   onStateChanged();
 }
 
-// Initial UI paint
 syncStateUI();
 onStateChanged();
 
-// Open the dedicated State sheet from the bottom bar and by tapping the badge
 if (menuStateBtn) menuStateBtn.onclick = () => openSheet('state');
 const stateBadge = document.getElementById('stateBadge');
 if (stateBadge) stateBadge.addEventListener('click', () => openSheet('state'));
 
-// Handle State sheet radios (OH/IN/etc.)
 stateSheetRadios.forEach(r => {
   r.addEventListener('change', () => setState(r.value));
 });
 
-// Handle Basemap sheet <select> + “Set” button
 if (stateApplyBtn) stateApplyBtn.onclick = () => { setState(stateSelect.value); closeSheets(); };
 // [BHH: STATE – LOGIC END]
+
 
 /*******************
  * LIVE GPS DOT + Locate button
@@ -965,6 +951,7 @@ document.getElementById('menuLocate').onclick = ()=>{
 };
 // [BHH: GPS END]
 
+
 /*******************
  * SHEETS: open/close + menu wiring
  *******************/
@@ -991,10 +978,8 @@ function openSheet(which){
   if(which==='basemap'){
     syncOverlayChecks();
     syncBaseRadio();
-    // keep the State selector showing the saved value
     if (stateSelect) stateSelect.value = currentState;
   }
-
   if(which==='moon'){ renderMoon(); }
   if(which==='score'){ computeHuntScore(); }
   if(which==='compass'){ rebuildCompassTargets(); updateCompassReadout(); }
@@ -1006,7 +991,7 @@ function openSheet(which){
 function closeSheets(){ sheetBg.classList.remove('show'); Object.values(sheetMap).forEach(s=> s.classList.remove('show')); }
 sheetBg.onclick = closeSheets;
 
-// Wire the floating “BHH Map Layers” button AFTER sheetMap/openSheet exist (guarded)
+// Wire the floating “BHH Map Layers” button AFTER sheetMap/openSheet exist
 (function(){
   const layersBtnHandle = document.getElementById('bhhLayersBtnHandle');
   if (layersBtnHandle) {
@@ -1025,7 +1010,7 @@ sheetBg.onclick = closeSheets;
       btn.setAttribute('aria-label', 'Close');
       btn.innerHTML = '&times;';
       btn.addEventListener('click', closeSheets);
-      s.appendChild(btn); // absolute-positioned, so DOM position doesn't matter
+      s.appendChild(btn);
     }
   });
 })();
@@ -1042,7 +1027,6 @@ const almFieldInfo     = document.getElementById('almanacFieldInfo');
 const almClose         = document.getElementById('almanacClose');
 
 btnAlmanac.onclick = () => {
-  // sync the checkbox to current panel visibility
   almFieldInfo.checked = (localStorage.getItem('ui_info_visible') === '1');
   openSheet('almanac');
 };
@@ -1050,35 +1034,31 @@ btnAlmanac.onclick = () => {
 almOpenScore.onclick = () => openSheet('score');
 almOpenMoon.onclick  = () => openSheet('moon');
 almClose.onclick     = () => closeSheets();
-
-// toggle the Field Info panel from the sheet
 almFieldInfo.onchange = () => setInfoVisible(almFieldInfo.checked);
 
 // Open Tools sheet and sync Delete toggle with current state
 document.getElementById('menuTools').onclick = () => {
   const delToggle = document.getElementById('toolDeleteToggle');
-  delToggle.checked = !!deleteMode; // reflect current delete mode
+  delToggle.checked = !!deleteMode;
   openSheet('tools');
 };
 
-// Tools sheet actions
 document.getElementById('toolWaypoints').addEventListener('click', () => openSheet('waypoints'));
 document.getElementById('toolTrack').addEventListener('click', () => openSheet('track'));
 document.getElementById('toolCompass').addEventListener('click', () => openSheet('compass'));
 
 const toolDeleteToggle = document.getElementById('toolDeleteToggle');
 toolDeleteToggle.onchange = () => {
-  // Toggle global delete mode and keep bottom-bar button label in sync
   deleteMode = toolDeleteToggle.checked;
   const btnDelete = document.getElementById('btnDeleteMode');
   if (btnDelete) btnDelete.textContent = `Delete: ${deleteMode ? 'On' : 'Off'}`;
 };
+// [BHH: SHEET LOGIC END]
 
 // Wire overlay toggles that depend on layers defined previously
 ovlMarks.onchange = ()=> ovlMarks.checked ? markersLayer.addTo(map) : map.removeLayer(markersLayer);
 ovlTrack.onchange = ()=> ovlTrack.checked ? trackLayer.addTo(map) : map.removeLayer(trackLayer);
 
-// [BHH: SHEET LOGIC END]
 
 /*******************
  * WAYPOINTS manager UI hooks (fly/edit/guide/delete) + details sheet
@@ -1217,6 +1197,7 @@ document.getElementById('wpDetSave').onclick = ()=>{
 };
 // [BHH: WAYPOINTS – UI HOOKS END]
 
+
 /*******************
  * FIELD INFO: visibility + draggable
  *******************/
@@ -1248,15 +1229,15 @@ makeDraggable(document.getElementById('bhhLayersBtn'), 'bhhLayersBtnHandle', 'ui
 makeDraggable(document.getElementById('stateBadge'), 'stateBadge', 'ui_state_badge_pos');
 // [BHH: INFO PANEL LOGIC END]
 
+
 /*******************
- * EXPORT / IMPORT / DELETE MODE (now supports JSON, KML, GPX)
+ * EXPORT / IMPORT / DELETE MODE (JSON / KML / GPX)
  *******************/
 const btnExport = document.getElementById('btnExport');
 const btnImport = document.getElementById('btnImport');
 const btnDelete = document.getElementById('btnDeleteMode');
 const fileInput = document.getElementById('fileImport');
 
-/* ---------- helpers: generic ---------- */
 function downloadText(filename, text, mime = 'application/octet-stream'){
   const blob = new Blob([text], {type: mime});
   const url = URL.createObjectURL(blob);
@@ -1266,8 +1247,6 @@ function downloadText(filename, text, mime = 'application/octet-stream'){
 }
 function escapeXml(s){ return String(s || '').replace(/[<>&'"]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[ch])); }
 
-/* ---------- EXPORT BUILDERS ---------- */
-/** Collect current state */
 function collectAll(){
   const drawings = JSON.parse(localStorage.getItem('bhh_drawings_v6') || '{"geojson":{"type":"FeatureCollection","features":[]},"circles":[]}');
   const markers = (function(){
@@ -1279,24 +1258,20 @@ function collectAll(){
   return {drawings, markers, track};
 }
 
-/** Convert a Leaflet circle to a polygon ring (for KML/GPX export) */
 function circleToRing(lat, lng, radiusM, segments=64){
   const pts=[]; for(let i=0;i<=segments;i++){
     const ang = (i/segments)*360;
-    pts.push(destPoint(lat,lng,ang,radiusM)); // uses destPoint from earlier code
+    pts.push(destPoint(lat,lng,ang,radiusM));
   }
   return pts;
 }
 
-/** Build KML */
 function buildKML(){
   const {drawings, markers, track} = collectAll();
 
-  // KML header
   let kml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">\n<Document><name>BuckeyeHunterHub</name>\n`;
 
-  // Markers -> Placemark Points
   kml += `<Folder><name>Markers</name>\n`;
   markers.forEach(m=>{
     kml += `<Placemark><name>${escapeXml(m.name)}</name>`+
@@ -1305,10 +1280,8 @@ function buildKML(){
   });
   kml += `</Folder>\n`;
 
-  // Drawings -> polygons/polylines/circles
   kml += `<Folder><name>Drawings</name>\n`;
 
-  // GeoJSON features
   const feats = (drawings.geojson && drawings.geojson.features) ? drawings.geojson.features : [];
   feats.forEach(f=>{
     const props = f.properties||{};
@@ -1322,7 +1295,6 @@ function buildKML(){
       const coords = ring.map(c=> `${c[0]},${c[1]},0`).join(' ');
       kml += `<Placemark><name>${escapeXml(nm)}</name><Polygon><outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>\n`;
     } else if(f.geometry.type === 'MultiPolygon'){
-      // export each part as its own Placemark
       (f.geometry.coordinates||[]).forEach((poly, idx)=>{
         const ring = poly[0]||[];
         const coords = ring.map(c=> `${c[0]},${c[1]},0`).join(' ');
@@ -1331,7 +1303,6 @@ function buildKML(){
     }
   });
 
-  // Circles
   (drawings.circles||[]).forEach(c=>{
     const name = (c.properties && c.properties.name) || 'Circle';
     const ringPts = circleToRing(c.lat, c.lng, c.radius);
@@ -1341,7 +1312,6 @@ function buildKML(){
 
   kml += `</Folder>\n`;
 
-  // Track -> gx:Track (if any timestamps), or LineString
   if(track && track.length){
     const hasTime = track.every(p=> typeof p.t === 'number');
     if(hasTime){
@@ -1359,13 +1329,11 @@ function buildKML(){
   return kml;
 }
 
-/** Build GPX (markers->wpt, polylines->rte, polygons->rte closed, circles->rte closed, track->trk) */
 function buildGPX(){
   const {drawings, markers, track} = collectAll();
   let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<gpx version="1.1" creator="BuckeyeHunterHub" xmlns="http://www.topografix.com/GPX/1/1">\n`;
 
-  // Waypoints
   markers.forEach(m=>{
     gpx += `<wpt lat="${m.lat}" lon="${m.lng}">`+
            `<name>${escapeXml(m.name)}</name>`+
@@ -1373,7 +1341,6 @@ function buildGPX(){
            `</wpt>\n`;
   });
 
-  // Routes from drawings
   const feats = (drawings.geojson && drawings.geojson.features) ? drawings.geojson.features : [];
   let rteIdx=1;
   feats.forEach(f=>{
@@ -1405,7 +1372,6 @@ function buildGPX(){
     }
   });
 
-  // Circles as closed route
   (drawings.circles||[]).forEach(c=>{
     const name = (c.properties && c.properties.name) || 'Circle';
     const ringPts = circleToRing(c.lat, c.lng, c.radius);
@@ -1414,7 +1380,6 @@ function buildGPX(){
     gpx += `</rte>\n`;
   });
 
-  // Track
   if(track && track.length){
     const name = 'BHH Track ' + new Date(track[0].t||Date.now()).toISOString().slice(0,10);
     gpx += `<trk><name>${escapeXml(name)}</name><trkseg>\n`;
@@ -1430,13 +1395,11 @@ function buildGPX(){
   return gpx;
 }
 
-/* ---------- IMPORTERS ---------- */
 function parseKML(text){
   const dom = new DOMParser().parseFromString(text, 'application/xml');
   const $ = (sel, root=dom) => Array.from(root.getElementsByTagName(sel));
   const gx = (sel, root=dom) => Array.from(root.getElementsByTagNameNS('http://www.google.com/kml/ext/2.2', sel));
 
-  // Points -> markers
   $('Placemark').forEach(pm=>{
     const name = (pm.getElementsByTagName('name')[0]?.textContent)||'Marker';
     const desc = (pm.getElementsByTagName('description')[0]?.textContent)||'';
@@ -1447,7 +1410,6 @@ function parseKML(text){
       if(isFinite(lat) && isFinite(lng)) addMarker([lat,lng], 'stand', name, undefined, desc);
       return;
     }
-    // LineString -> polyline
     const ls = pm.getElementsByTagName('LineString')[0];
     if(ls){
       const coordTxt = ls.getElementsByTagName('coordinates')[0]?.textContent||'';
@@ -1458,7 +1420,6 @@ function parseKML(text){
       drawnItems.addLayer(layer);
       return;
     }
-    // Polygon -> polygon
     const poly = pm.getElementsByTagName('Polygon')[0];
     if(poly){
       const ringTxt = poly.getElementsByTagName('coordinates')[0]?.textContent||'';
@@ -1469,11 +1430,10 @@ function parseKML(text){
       drawnItems.addLayer(layer);
       return;
     }
-    // gx:Track -> trackPoints
     const track = gx('Track', pm)[0];
     if(track){
       const whens = Array.from(track.getElementsByTagName('when')).map(n=> new Date(n.textContent).getTime());
-      const coords = gx('coord', track).map(n=> n.textContent.trim().split(/\s+/).map(Number)); // lng lat alt
+      const coords = gx('coord', track).map(n=> n.textContent.trim().split(/\s+/).map(Number));
       const pts=[]; for(let i=0;i<coords.length;i++){
         const [lng,lat] = coords[i]; const t = whens[i] || Date.now();
         if(isFinite(lat) && isFinite(lng)) pts.push({lat,lng,t});
@@ -1489,7 +1449,6 @@ function parseGPX(text){
   const dom = new DOMParser().parseFromString(text, 'application/xml');
   const $ = (sel, root=dom) => Array.from(root.getElementsByTagName(sel));
 
-  // wpt -> markers
   $('wpt').forEach(n=>{
     const lat = parseFloat(n.getAttribute('lat'));
     const lon = parseFloat(n.getAttribute('lon'));
@@ -1499,7 +1458,6 @@ function parseGPX(text){
     addMarker([lat,lon], 'stand', name, undefined, desc);
   });
 
-  // rte -> polyline (or closed polygon if it closes)
   $('rte').forEach(r=>{
     const pts = Array.from(r.getElementsByTagName('rtept')).map(p=> [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))]).filter(p=> isFinite(p[0])&&isFinite(p[1]));
     const name = r.getElementsByTagName('name')[0]?.textContent || 'Route';
@@ -1511,7 +1469,6 @@ function parseGPX(text){
     }
   });
 
-  // trk -> main track
   const trk = $('trk')[0];
   if(trk){
     const pts = Array.from(trk.getElementsByTagName('trkpt')).map(p=>{
@@ -1529,9 +1486,7 @@ function parseGPX(text){
   saveDraw(); saveMarkers();
 }
 
-/* ---------- EXPORT ACTION ---------- */
 btnExport.onclick = () => {
-  // quick chooser; you can swap to a sheet later if you want UI
   const choice = (prompt('Export format: json | kml | gpx', 'json')||'json').trim().toLowerCase();
   try{
     if(choice === 'kml'){
@@ -1549,7 +1504,6 @@ btnExport.onclick = () => {
   }
 };
 
-/* ---------- IMPORT ACTION ---------- */
 btnImport.onclick = () => fileInput.click();
 
 fileInput.onchange = (ev) => {
@@ -1567,14 +1521,12 @@ fileInput.onchange = (ev) => {
       } else if(ext === 'gpx'){
         parseGPX(text);
       } else {
-        // JSON / GeoJSON fallback (legacy behavior)
         const obj = JSON.parse(text);
         if(obj.drawings && (obj.drawings.geojson || obj.drawings.circles)){
           localStorage.setItem('bhh_drawings_v6', JSON.stringify(obj.drawings));
           drawnItems.clearLayers(); segmentLabelsGroup.clearLayers();
           restoreDraw();
         } else if(obj.type==='FeatureCollection' || obj.type==='Feature'){
-          // plain GeoJSON into drawings
           L.geoJSON(obj, {onEachFeature:(_,l)=> drawnItems.addLayer(l)});
           localStorage.setItem('bhh_drawings_v6', JSON.stringify({ geojson: obj, circles: [] }));
         }
@@ -1585,9 +1537,8 @@ fileInput.onchange = (ev) => {
         }
       }
 
-      // sync UI after import
       refreshWaypointsUI();
-      updateTrackStats?.();
+      updateTrackStats();
 
     } catch(e){
       alert('Import failed: ' + e.message);
@@ -1604,6 +1555,7 @@ if (btnDelete) {
     btnDelete.textContent = `Delete: ${deleteMode ? 'On' : 'Off'}`;
   };
 }
+
 
 /*******************
  * PWA: service worker
