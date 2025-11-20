@@ -1,8 +1,6 @@
+// main.js – your 5 a.m. version + radar + wind cone
 import { initMap } from './map.js';
 import { initStates } from './states.js';
-
-let radarLayer = null;
-let scentCone = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
@@ -26,15 +24,20 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.close-x').forEach(x => x.addEventListener('click', () => backdrop.click()));
 
   // Radar
-  const ts = Math.floor(Date.now() / 600000) * 600000;
-  radarLayer = L.tileLayer(`https://tile.rainviewer.com/v2/radar/${ts}/256/{z}/{x}/{y}/8/1_1.png`, { opacity: 0.6 });
-  document.getElementById('toggleRadar')?.addEventListener('change', e => e.target.checked ? radarLayer.addTo(map) : map.removeLayer(radarLayer));
+  let radarLayer = null;
+  const timestamp = Math.floor(Date.now() / 600000) * 600000;
+  radarLayer = L.tileLayer(`https://tile.rainviewer.com/v2/radar/${timestamp}/256/{z}/{x}/{y}/8/1_1.png`, { opacity: 0.6 });
+  document.getElementById('toggleRadar')?.addEventListener('change', e => {
+    if (e.target.checked) radarLayer.addTo(map);
+    else map.removeLayer(radarLayer);
+  });
 
-  // Wind
+  // Wind Cone
+  let scentCone = null;
   document.getElementById('menuWind')?.addEventListener('click', () => {
     if (scentCone) { map.removeLayer(scentCone); scentCone = null; return; }
     navigator.geolocation.getCurrentPosition(pos => {
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=\( {pos.coords.latitude}&longitude= \){pos.coords.longitude}&current_weather=true`)
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`)
         .then(r => r.json()).then(data => {
           const dir = data.current_weather.winddirection || 0;
           scentCone = L.circle([pos.coords.latitude, pos.coords.longitude], { radius: 805, color: '#6dbc5d', fillOpacity: 0.25 }).addTo(map);
@@ -52,5 +55,5 @@ document.addEventListener('DOMContentLoaded', () => {
   shopBtn.onclick = () => window.open('https://buckeyehunterhub.com/shop', '_blank');
   document.getElementById('mainMenu').appendChild(shopBtn);
 
-  console.log("Back to your 5am version – perfect menu – with improvements");
+  console.log("Back to 5 a.m. perfect menu – with radar + wind + shop gear");
 });
