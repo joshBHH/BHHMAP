@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
@@ -22,7 +24,6 @@
     <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
     <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
 
-    <!-- YOUR EXACT 5AM BOTTOM MENU – UNTOUCHED -->
     <nav class="main-menu" id="mainMenu">
       <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
       <button id="menuAlmanac">Almanac</button>
@@ -37,4 +38,32 @@
 
     <div class="backdrop" id="sheetBackdrop"></div>
 
-    <!--
+    <!-- YOUR ORIGINAL SHEETS + radar toggle -->
+    <div class="sheet" id="layersSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>BHH Map Layers</h4>
+      <div class="content">
+        <label class="option"><input type="checkbox" id="togglePublic" checked> Public Land</label>
+        <label class="option"><input type="checkbox" id="toggleRadar"> Weather Radar (live)</label>
+      </div>
+    </div>
+
+    <div class="sheet" id="stateSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Select State</h4>
+      <div class="content">
+        <label class="option"><input type="radio" name="bhhState" value="OH" checked> Ohio</label>
+        <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
+        <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
+        <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
+      </div>
+    </div>
+
+    <!-- Add your other sheets exactly as they were at 5am -->
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
