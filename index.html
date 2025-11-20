@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1a0f">
+  <title>Buckeye Hunter Hub — Mobile Hunting Map</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="Icons/bhh-logo-180.png">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="map"></div>
+
+    <!-- Top-left Layers button -->
+    <div id="bhhLayersBtn">
+      <button id="bhhLayersBtnHandle">BHH Map Layers</button>
+    </div>
+
+    <!-- Top-right: State badge + logo -->
+    <div id="topRightContainer">
+      <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
+      <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
+    </div>
+
+    <!-- Info panel (draggable) -->
+    <section class="panel" id="infoPanel" style="display:none;">
+      <h3 id="infoHandle">Field Info</h3>
+      <div class="row"><span>Sunrise</span><strong id="pSunrise">--:--</strong></div>
+      <div class="row"><span>Sunset</span><strong id="pSunset">--:--</strong></div>
+      <div class="row"><span>Day Length</span><strong id="pDay">--h --m</strong></div>
+      <div class="row"><span>Track Distance</span><strong id="pTrkDist">0 m</strong></div>
+      <div class="row"><span>Track Duration</span><strong id="pTrkDur">0:00</strong></div>
+    </section>
+
+    <!-- Bottom menu – your original layout + shop-ready -->
+    <nav class="main-menu" id="mainMenu">
+      <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
+      <button id="menuAlmanac">Almanac</button>
+      <button id="menuTools">Tools</button>
+      <button id="btnDeleteMode">Delete: Off</button>
+      <button id="menuState">State</button>
+      <button id="btnExport">Export</button>
+      <button id="btnImport">Import</button>
+      <button id="menuLocate">Locate Me</button>
+      <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx">
+    </nav>
+
+    <div class="backdrop" id="sheetBackdrop"></div>
+
+    <!-- ALL SHEETS – your original + radar toggle -->
+    <div class="sheet" id="basemapSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Basemap</h4>
+      <div class="content">
+        <div class="option" data-basemap="hybrid"><div>🛰 Hybrid (default)</div><div>✓</div></div>
+        <div class="option" data-basemap="satellite"><div>📡 Satellite Only</div></div>
+        <div class="option" data-basemap="topo"><div>🗺 Topo</div></div>
+        <div class="option" data-basemap="basic"><div>🗺 Basic</div></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="stateSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Select State</h4>
+      <div class="content">
+        <label class="option"><input type="radio" name="bhhState" value="OH" checked> Ohio</label>
+        <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
+        <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
+        <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
+        <label class="option"><input type="radio" name="bhhState" value="KY"> Kentucky <span class="tag">soon</span></label>
+        <label class="option"><input type="radio" name="bhhState" value="WV"> West Virginia <span class="tag">soon</span></label>
+      </div>
+    </div>
+
+    <div class="sheet" id="toolsSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Tools</h4>
+      <div class="content">
+        <div class="option" id="btnTrack">▶ Start Track Recorder</div>
+        <div class="option" id="btnClearTrack">Clear Track</div>
+        <div class="option" id="btnScentCone">Scent Cone Overlay</div>
+        <div class="option" id="btnCompass">Compass Overlay</div>
+        <div class="option" id="btnInfoPanel">Show Field Info Panel</div>
+      </div>
+    </div>
+
+    <div class="sheet" id="almanacSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Today's Hunt Score</h4>
+      <div class="content">
+        <div class="row"><span>Moon Phase</span><strong id="moonPhase">--</strong></div>
+        <div class="row"><span>Illumination</span><strong id="moonIllum">--%</strong></div>
+        <div class="row"><span>Major Feeding</span><strong id="majorTimes">--</strong></div>
+        <div class="row"><span>Minor Feeding</span><strong id="minorTimes">--</strong></div>
+        <div class="row"><span>Overall Score</span><strong id="huntScore">Calculating…</strong></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="layersSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>BHH Map Layers</h4>
+      <div class="content">
+        <label class="option"><input type="checkbox" id="togglePublic" checked> Public Land / Game Lands</label>
+        <label class="option"><input type="checkbox" id="toggleCounties"> County Lines & Labels</label>
+        <label class="option"><input type="checkbox" id="toggleWaterfowl"> Waterfowl Zones (OH only)</label>
+        <label class="option"><input type="checkbox" id="toggleRadar"> Weather Radar (live)</label>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
