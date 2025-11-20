@@ -1,22 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1a0f" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1a0f">
   <title>Buckeye Hunter Hub — Mobile Hunting Map</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="Icons/bhh-logo-180.png">
 
-  <!-- Leaflet core -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Leaflet.draw -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-
-  <!-- SunCalc for sun/moon -->
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
 
   <link rel="stylesheet" href="style.css">
@@ -38,7 +33,6 @@
       <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
       <div class="row"><span>Track Distance</span><strong id="pTrkDist" class="tag">0 m</strong></div>
       <div class="row"><span>Track Duration</span><strong id="pTrkDur" class="tag">0:00</strong></div>
-      <p class="tag">Tip: start the Track Recorder to populate distance & duration.</p>
     </section>
 
     <nav class="main-menu" id="mainMenu">
@@ -76,8 +70,6 @@
         <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
       </div>
     </div>
-
-    <!-- Add your other sheets (almanac, tools) if you had them -->
 
   </div>
 
