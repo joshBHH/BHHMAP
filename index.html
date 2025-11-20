@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b1a0f">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1a0f" />
   <title>Buckeye Hunter Hub — Mobile Hunting Map</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="Icons/bhh-logo-180.png">
 
+  <!-- Leaflet core -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet.draw -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <!-- SunCalc for sun/moon -->
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
 
   <link rel="stylesheet" href="style.css">
@@ -20,9 +25,21 @@
   <div id="app">
     <div id="map"></div>
 
-    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
     <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
+
+    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
+
     <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
+
+    <section class="panel" id="infoPanel" style="display:none;">
+      <h3 id="infoHandle">📋 Field Info</h3>
+      <div class="row"><span>Sunrise</span><strong id="pSunrise" class="tag">--:--</strong></div>
+      <div class="row"><span>Sunset</span><strong id="pSunset" class="tag">--:--</strong></div>
+      <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
+      <div class="row"><span>Track Distance</span><strong id="pTrkDist" class="tag">0 m</strong></div>
+      <div class="row"><span>Track Duration</span><strong id="pTrkDur" class="tag">0:00</strong></div>
+      <p class="tag">Tip: start the Track Recorder to populate distance & duration.</p>
+    </section>
 
     <nav class="main-menu" id="mainMenu">
       <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
@@ -33,12 +50,11 @@
       <button id="btnExport">Export</button>
       <button id="btnImport">Import</button>
       <button id="menuLocate">Locate Me</button>
-      <input type="file" id="fileImport" style="display:none">
+      <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx">
     </nav>
 
     <div class="backdrop" id="sheetBackdrop"></div>
 
-    <!-- YOUR ORIGINAL SHEETS + radar toggle -->
     <div class="sheet" id="layersSheet">
       <div class="grab"></div>
       <button class="close-x">×</button>
@@ -61,7 +77,8 @@
       </div>
     </div>
 
-    <!-- Add your other sheets exactly as they were at 5am -->
+    <!-- Add your other sheets (almanac, tools) if you had them -->
+
   </div>
 
   <script type="module" src="main.js"></script>
