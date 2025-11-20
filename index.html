@@ -8,139 +8,80 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="Icons/bhh-logo-180.png">
 
+  <!-- Leaflet core -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet.draw -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <!-- SunCalc for sun/moon -->
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
-</head>
-<body>
-  <div id="app">
-    <div id="map"></div>
 
-    <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
-    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
-    <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
-
-    <nav class="main-menu" id="mainMenu">
-      <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
-      <button id="menuState">State</button>
-      <button id="menuLocate">Locate Me</button>
-      <button id="btnExport">Export</button>
-      <button id="btnImport">Import</button>
-    </nav>
-
-    <div class="backdrop" id="sheetBackdrop"></div>
-
-    <div class="sheet" id="layersSheet">
-      <div class="grab"></div>
-      <button class="close-x">×</button>
-      <h4>BHH Map Layers</h4>
-      <div class="content">
-        <label class="option"><input type="checkbox" id="togglePublic" checked> Public Land</label>
-        <label class="option"><input type="checkbox" id="toggleRadar"> Weather Radar (live)</label>
-      </div>
-    </div>
-
-    <div class="sheet" id="stateSheet">
-      <div class="grab"></div>
-      <button class="close-x">×</button>
-      <h4>Select State</h4>
-      <div class="content">
-        <label class="option"><input type="radio" name="bhhState" value="OH" checked> Ohio</label>
-        <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
-        <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
-        <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
-      </div>
-    </div>
-  </div>
-
+  <!-- Your exact original style from this morning -->
   <style>
-    :root{--bg:#0b1a0f;--panel:#101f14;--accent:#6dbc5d;--text:#e7f1e8;--shadow:0 12px 30px rgba(0,0,0,.35);--safe-bottom:env(safe-area-inset-bottom,0px);--logo-size:128px}
-    html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+    :root{
+      --bg:#0b1a0f;--panel:#101f14;--muted:#1a2b1f;--accent:#6dbc5d;--text:#e7f1e8;--subtle:#a3b7a6;--danger:#f87171;--shadow:0 12px 30px rgba(0,0,0,.35);--safe-bottom: env(safe-area-inset-bottom, 0px);--logo-size: 128px;
+    }
+    html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Roboto,Arial,sans-serif}
     #map{position:fixed;inset:0;height:100dvh}
+    #map.placing{cursor: crosshair}
     .map-logo{position:fixed;right:12px;top:12px;z-index:1300;pointer-events:none}
-    .map-logo img{height:var(--logo-size);border-radius:10px;background:rgba(16,31,20,.6);padding:6px;box-shadow:var(--shadow)}
-    #bhhLayersBtn{position:fixed;top:12px;left:12px;z-index:1300}
-    #bhhLayersBtn button{background:var(--panel);border:1px solid var(--accent);color:var(--text);padding:10px 16px;border-radius:12px;font-weight:bold;box-shadow:var(--shadow)}
-    #stateBadge{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:1300;background:var(--panel);border:1px solid var(--accent);border-radius:12px;padding:6px 12px;font-weight:bold;box-shadow:var(--shadow)}
-    .main-menu{position:fixed;left:0;right:0;bottom:0;z-index:1200;display:flex;gap:8px;justify-content:space-around;padding:10px 12px calc(10px + var(--safe-bottom));background:linear-gradient(180deg,rgba(11,26,15,.1),rgba(11,26,15,.85));backdrop-filter:blur(8px);border-top:1px solid #203325;flex-wrap:wrap}
+    .map-logo img{height:var(--logo-size);width:auto;display:block;border-radius:10px;background:rgba(16,31,20,.6);padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+    .panel{position:fixed;left:12px;top:80px;z-index:1000;background:var(--panel);border:1px solid #203325;border-radius:12px;box-shadow:var(--shadow);padding:8px 10px;min-width:180px;max-width:260px}
+    .panel h3{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:8px;cursor:move}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid #1d3323}
+    .row:last-child{border-bottom:0}
+    .tag{font-size:11px;color:var(--subtle)}
+    .main-menu{position:fixed;left:0;right:0;bottom:0;z-index:1200;display:flex;gap:8px;justify-content:space-around;align-items:center;padding:10px 12px calc(10px + var(--safe-bottom));background:linear-gradient(180deg,rgba(11,26,15,.1),rgba(11,26,15,.85));backdrop-filter:blur(8px);border-top:1px solid #203325;flex-wrap:wrap}
     .main-menu button{flex:1;max-width:140px;padding:10px;border:1px solid #25432b;border-radius:12px;background:#14271a;color:var(--text);font-size:14px;cursor:pointer}
-    .main-menu button[data-shop]{background:var(--accent);color:#000;font-weight:bold}
-    .wind-btn{display:flex;align-items:center;gap:8px}
+    .wind-btn{display:flex;align-items:center;gap:8px;max-width:260px}
+    #windText{font-size:12px}
     .wind-arrow{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #e7f1e8;display:inline-block;transform:rotate(0deg)}
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1199;display:none}
     .backdrop.show{display:block}
     .sheet{position:fixed;left:0;right:0;bottom:0;z-index:1200;background:var(--panel);border-top:1px solid #203325;border-radius:16px 16px 0 0;box-shadow:var(--shadow);transform:translateY(110%);transition:transform .25s ease}
     .sheet.show{transform:translateY(0)}
-    .sheet .grab{width:36px;height:4px;background:#2b4231;border-radius:999px;margin:8px auto}
-    .sheet .close-x{position:absolute;top:8px;right:12px;width:32px;height:32px;background:#14271a;border:1px solid #25432b;border-radius:50%;font-size:18px;line-height:30px;text-align:center;cursor:pointer}
-    .content{padding:0 16px 16px}
-    .option{padding:12px 0;border-bottom:1px solid #1d3323;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
-    .option:last-child{border-bottom:none}
-    .leaflet-control-zoom{margin-top:120px !important}
+    .sheet .grab{width:36px;height:4px;border-radius:999px;background:#2b4231;margin:8px auto}
+    .sheet .close-x{position:absolute;top:8px;right:12px;width:32px;height:32px;border-radius:10px;border:1px solid #25432b;background:#14271a;color:var(--text);font-size:18px;line-height:30px;text-align:center;cursor:pointer}
+    .seglabel,.county-label{background:rgba(16,31,20,.92);border:1px solid #203325;border-radius:10px;padding:2px 6px;font-size:11px;color:var(--text);box-shadow:var(--shadow)}
+    @media (max-width:640px){:root{--logo-size:96px}.panel{left:8px;top:72px}}
   </style>
+</head>
+<body>
+  <div id="app">
+    <div id="map"></div>
 
-  <script>
-    let map, radarLayer = null, scentCone = null, currentState = localStorage.getItem('bhh_state_code') || 'OH';
-    const STATES = { OH: { name: 'Ohio', center: [40.4173, -82.9071], zoom: 7 }, IN: { name: 'Indiana', center: [39.8, -86.3], zoom: 7 }, MI: { name: 'Michigan', center: [44.3, -85.6], zoom: 6 }, PA: { name: 'Pennsylvania', center: [40.9, -77.8], zoom: 7 } };
+    <!-- Your original top-left logo and Layers button -->
+    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub logo"/></div>
+    <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
 
-    map = L.map('map', { zoomControl: false }).setView(STATES[currentState].center, STATES[currentState].zoom);
-    L.tileLayer('https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=VLOZCnjQYBtgpZ3BXBK3', { attribution: '&copy; MapTiler &copy; OpenStreetMap' }).addTo(map);
-    L.control.zoom({ position: 'topleft' }).addTo(map);
+    <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
 
-    // Radar
-    const ts = Math.floor(Date.now() / 600000) * 600000;
-    radarLayer = L.tileLayer(`https://tile.rainviewer.com/v2/radar/${ts}/256/{z}/{x}/{y}/8/1_1.png`, { opacity: 0.6 });
-    document.getElementById('toggleRadar')?.addEventListener('change', e => e.target.checked ? radarLayer.addTo(map) : map.removeLayer(radarLayer));
+    <section class="panel" id="infoPanel" style="display:none;">
+      <h3 id="infoHandle">📋 Field Info</h3>
+      <div class="row"><span>Sunrise</span><strong id="pSunrise" class="tag">--:--</strong></div>
+      <div class="row"><span>Sunset</span><strong id="pSunset" class="tag">--:--</strong></div>
+      <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
+      <div class="row"><span>Track Distance</span><strong id="pTrkDist" class="tag">0 m</strong></div>
+      <div class="row"><span>Track Duration</span><strong id="pTrkDur" class="tag">0:00</strong></div>
+      <p class="tag">Tip: start the Track Recorder to populate distance & duration.</p>
+    </section>
 
-    // Wind
-    document.getElementById('menuWind')?.addEventListener('click', () => {
-      if (scentCone) { map.removeLayer(scentCone); scentCone = null; return; }
-      navigator.geolocation.getCurrentPosition(pos => {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=\( {pos.coords.latitude}&longitude= \){pos.coords.longitude}&current_weather=true`)
-          .then(r => r.json()).then(data => {
-            const dir = data.current_weather.winddirection || 0;
-            scentCone = L.circle([pos.coords.latitude, pos.coords.longitude], { radius: 805, color: '#6dbc5d', fillOpacity: 0.25 }).addTo(map);
-            document.getElementById('windArrow').style.transform = `rotate(${dir - 90}deg)`;
-            document.getElementById('windText').textContent = `Wind: ${data.current_weather.windspeed} mph`;
-            map.setView([pos.coords.latitude, pos.coords.longitude], 16);
-          });
-      });
-    });
+    <!-- Your original bottom menu – unchanged -->
+    <nav class="main-menu" id="mainMenu">
+      <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
+      <button id="menuAlmanac">Almanac</button>
+      <button id="menuTools">Tools</button>
+      <button id="btnDeleteMode">Delete: Off</button>
+      <button id="menuState">State</button>
+      <button id="btnExport">Export</button>
+      <button id="btnImport">Import</button>
+      <button id="menuLocate">Locate Me</button>
+      <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx">
+    </nav>
 
-    // Shop Gear
-    const shopBtn = document.createElement('button');
-    shopBtn.textContent = 'Shop Gear';
-    shopBtn.dataset.shop = 'true';
-    shopBtn.onclick = () => window.open('https://buckeyehunterhub.com/shop', '_blank');
-    document.getElementById('mainMenu').appendChild(shopBtn);
+    <div class="backdrop" id="sheetBackdrop"></div>
 
-    // State selector
-    document.querySelectorAll('input[name="bhhState"]').forEach(r => r.addEventListener('change', e => {
-      currentState = e.target.value;
-      localStorage.setItem('bhh_state_code', currentState);
-      document.getElementById('stateBadgeText').textContent = STATES[currentState].name;
-      map.setView(STATES[currentState].center, STATES[currentState].zoom);
-    }));
-
-    // UI
-    const backdrop = document.getElementById('sheetBackdrop');
-    document.getElementById('bhhLayersBtnHandle')?.addEventListener('click', () => {
-      document.getElementById('layersSheet').classList.add('show');
-      backdrop.classList.add('show');
-    });
-    document.getElementById('menuState')?.addEventListener('click', () => {
-      document.getElementById('stateSheet').classList.add('show');
-      backdrop.classList.add('show');
-    });
-    backdrop.addEventListener('click', () => {
-      document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show'));
-      backdrop.classList.remove('show');
-    });
-    document.querySelectorAll('.close-x').forEach(x => x.addEventListener('click', () => backdrop.click()));
-
-    console.log("Buckeye Hunter Hub Map – ONE FILE – 100% WORKING – Nov 19 2025");
-  </script>
-</body>
-</html>
+    <!--
