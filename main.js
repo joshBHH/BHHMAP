@@ -1,4 +1,4 @@
-// main.js – your 5 a.m. version + radar + wind cone
+// main.js – full working version – radar, wind cone, shop gear live
 import { initMap } from './map.js';
 import { initStates } from './states.js';
 
@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   document.getElementById('bhhLayersBtnHandle')?.addEventListener('click', () => openSheet('layersSheet'));
+  document.getElementById('menuAlmanac')?.addEventListener('click', () => openSheet('almanacSheet'));
+  document.getElementById('menuTools')?.addEventListener('click', () => openSheet('toolsSheet'));
   document.getElementById('menuState')?.addEventListener('click', () => openSheet('stateSheet'));
 
   backdrop.addEventListener('click', () => {
@@ -55,5 +57,5 @@ document.addEventListener('DOMContentLoaded', () => {
   shopBtn.onclick = () => window.open('https://buckeyehunterhub.com/shop', '_blank');
   document.getElementById('mainMenu').appendChild(shopBtn);
 
-  console.log("Back to 5 a.m. perfect menu – with radar + wind + shop gear");
+  console.log("Buckeye Hunter Hub Map – 5-File Version – Mobile/Desktop Perfect – Nov 19 2025");
 });
