@@ -31,3 +31,65 @@ html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-
 .option:last-child{border-bottom:0}
 .leaflet-control-zoom{margin-top:120px !important}
 @media (max-width:640px) {:root{--logo-size:96px}.panel{left:8px;top:72px}}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="map"></div>
+
+    <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
+
+    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
+
+    <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
+
+    <section class="panel" id="infoPanel" style="display:none;">
+      <h3 id="infoHandle">📋 Field Info</h3>
+      <div class="row"><span>Sunrise</span><strong id="pSunrise" class="tag">--:--</strong></div>
+      <div class="row"><span>Sunset</span><strong id="pSunset" class="tag">--:--</strong></div>
+      <div class="row"><span>Day Length</span><strong id="pDay" class="tag">--h --m</strong></div>
+      <div class="row"><span>Track Distance</span><strong id="pTrkDist" class="tag">0 m</strong></div>
+      <div class="row"><span>Track Duration</span><strong id="pTrkDur" class="tag">0:00</strong></div>
+    </section>
+
+    <nav class="main-menu" id="mainMenu">
+      <button id="menuWind" class="wind-btn"><span class="wind-arrow" id="windArrow"></span><span id="windText">Wind: --</span></button>
+      <button id="menuAlmanac">Almanac</button>
+      <button id="menuTools">Tools</button>
+      <button id="btnDeleteMode">Delete: Off</button>
+      <button id="menuState">State</button>
+      <button id="btnExport">Export</button>
+      <button id="btnImport">Import</button>
+      <button id="menuLocate">Locate Me</button>
+      <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx">
+    </nav>
+
+    <div class="backdrop" id="sheetBackdrop"></div>
+
+    <div class="sheet" id="layersSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>BHH Map Layers</h4>
+      <div class="content">
+        <label class="option"><input type="checkbox" id="togglePublic" checked> Public Land</label>
+        <label class="option"><input type="checkbox" id="toggleRadar"> Weather Radar (live)</label>
+      </div>
+    </div>
+
+    <div class="sheet" id="stateSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Select State</h4>
+      <div class="content">
+        <label class="option"><input type="radio" name="bhhState" value="OH" checked> Ohio</label>
+        <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
+        <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
+        <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
