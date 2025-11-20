@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1a0f" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1a0f">
   <title>Buckeye Hunter Hub — Mobile Hunting Map</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="Icons/bhh-logo-180.png">
-  <meta name="theme-color" content="#0b1a0f">
 
-  <!-- Leaflet core -->
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Leaflet.draw -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-
-  <!-- SunCalc for sun/moon -->
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -28,7 +27,7 @@
 
     <div id="bhhLayersBtn"><button id="bhhLayersBtnHandle">BHH Map Layers</button></div>
 
-    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub"/></div>
+    <div class="map-logo"><img src="Icons/bhh-logo.png" alt="Buckeye Hunter Hub logo"/></div>
 
     <div id="stateBadge">State: <strong id="stateBadgeText">Ohio</strong></div>
 
@@ -47,9 +46,7 @@
       <button id="menuTools">Tools</button>
       <button id="btnDeleteMode">Delete: Off</button>
       <button id="menuState">State</button>
-      <button id="btnExport">Export</button>
-      <button id="btnImport">Import</button>
-      <button id="menuLocate">Locate Me</button>
+      <button id="menuHamburger" class="hamburger-btn">☰</button>
       <input type="file" id="fileImport" style="display:none" accept=".json,.geojson,.kml,.gpx">
     </nav>
 
@@ -69,11 +66,41 @@
       <div class="grab"></div>
       <button class="close-x">×</button>
       <h4>Select State</h4>
+      <div class="content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+        <label class="option" style="background:#14271a; border:1px solid #25432b; border-radius:8px; padding:12px; text-align:center"><input type="radio" name="bhhState" value="OH" checked> Ohio</label>
+        <label class="option" style="background:#14271a; border:1px solid #25432b; border-radius:8px; padding:12px; text-align:center"><input type="radio" name="bhhState" value="IN"> Indiana</label>
+        <label class="option" style="background:#14271a; border:1px solid #25432b; border-radius:8px; padding:12px; text-align:center"><input type="radio" name="bhhState" value="MI"> Michigan</label>
+        <label class="option" style="background:#14271a; border:1px solid #25432b; border-radius:8px; padding:12px; text-align:center"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
+      </div>
+    </div>
+
+    <div class="sheet" id="toolsSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Tools</h4>
       <div class="content">
-        <label class="option"><input type="radio" name="bhhState" value="OH" checked> Ohio</label>
-        <label class="option"><input type="radio" name="bhhState" value="IN"> Indiana</label>
-        <label class="option"><input type="radio" name="bhhState" value="MI"> Michigan</label>
-        <label class="option"><input type="radio" name="bhhState" value="PA"> Pennsylvania</label>
+        <div class="option" id="addWaypoint">Add Waypoint</div>
+      </div>
+    </div>
+
+    <div class="sheet" id="hamburgerSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Menu</h4>
+      <div class="content">
+        <div class="option" id="importOption">Import</div>
+        <div class="option" id="exportOption">Export</div>
+        <div class="option" id="profileOption">Profile / Login</div>
+      </div>
+    </div>
+
+    <div class="sheet" id="loginSheet">
+      <div class="grab"></div>
+      <button class="close-x">×</button>
+      <h4>Login</h4>
+      <div class="content">
+        <button id="googleLogin">Google</button>
+        <button id="emailLogin">Email</button>
       </div>
     </div>
 
