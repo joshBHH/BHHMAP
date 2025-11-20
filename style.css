@@ -35,12 +35,21 @@ html,body,#app{height:100%;margin:0;background:var(--bg);color:var(--text);font-
 .row:last-child{border-bottom:0}
 .tag{font-size:11px;color:var(--subtle)}
 
-/* Bottom menu – your original layout + mobile safe */
-.main-menu{position:fixed;left:0;right:0;bottom:0;z-index:1200;display:flex;gap:8px;justify-content:space-around;align-items:center;padding:10px 12px calc(10px + var(--safe-bottom));background:linear-gradient(180deg,rgba(11,26,15,.1),rgba(11,26,15,.85));backdrop-filter:blur(8px);border-top:1px solid #203325;flex-wrap:wrap}
-.main-menu button{flex:1;max-width:140px;padding:10px;border:1px solid #25432b;border-radius:12px;background:#14271a;color:var(--text);font-size:14px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wind-btn{display:flex;align-items:center;gap:8px;max-width:260px}
-#windText{font-size:12px}
-.wind-arrow{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #e7f1e8;display:inline-block;transform:rotate(0deg)}
+.main-menu{
+  position:fixed;left:0;right:0;bottom:0;z-index:1200;
+  display:flex;gap:8px;justify-content:space-around;align-items:center;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  background:linear-gradient(180deg,rgba(11,26,15,.1),rgba(11,26,15,.85));
+  backdrop-filter:blur(8px);border-top:1px solid #203325;flex-wrap:wrap;
+}
+.main-menu button{
+  flex:1;max-width:140px;padding:10px;border:1px solid #25432b;border-radius:12px;
+  background:#14271a;color:#e7f1e8;font-size:14px;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.main-menu button[data-shop]{
+  background:#6dbc5d;color:#000;font-weight:bold;
+}
 
 /* Backdrop + sheets – your original */
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1199;display:none}
