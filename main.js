@@ -994,7 +994,12 @@ function openSheet(which){
   }
   if(which==='moon'){ renderMoon(); }
   if(which==='score'){ computeHuntScore(); }
-  if(which==='compass'){ rebuildCompassTargets(); updateCompassReadout(); }
+    if (which === 'compass') {
+    rebuildCompassTargets();
+    updateCompassReadout();
+    enableCompass();   // auto-enable when you open the Compass tool
+  }
+
   if(which==='almanac'){ 
     const cb = document.getElementById('almanacFieldInfo');
     if(cb) cb.checked = (localStorage.getItem('ui_info_visible') === '1');
@@ -1218,106 +1223,5 @@ document.getElementById('wpDetSave').onclick = ()=>{
 };
 // [BHH: WAYPOINTS – UI HOOKS END]
 
-// --- BHH: Compass rotation (device orientation) ---
-(() => {
-  const needle = document.getElementById('compassNeedle');
-  const headingLabel = document.getElementById('compHeadingText');
-  const enableBtn = document.getElementById('compEnable');
 
-  if (!needle || !headingLabel || !enableBtn) return;
-
-  let compassActive = false;
-  let orientationHandler = null;
-
-  function setHeading(deg) {
-    if (!needle) return;
-    const normalized = ((deg % 360) + 360) % 360;
-
-    // Rotate the needle around its base
-    needle.style.transform =
-      `translate(-50%, -100%) rotate(${normalized}deg)`;
-
-    headingLabel.textContent = `Heading: ${Math.round(normalized)}°`;
-  }
-
-  function createOrientationHandler() {
-    return function onOrientation(e) {
-      let heading = null;
-
-      // iOS Safari provides webkitCompassHeading
-      if (typeof e.webkitCompassHeading === 'number') {
-        heading = e.webkitCompassHeading; // already degrees from North
-      } else if (typeof e.alpha === 'number') {
-        // alpha is 0–360, clockwise from device's initial position
-        // Common approach: convert to compass-style heading
-        heading = 360 - e.alpha;
-      }
-
-      if (heading == null || isNaN(heading)) return;
-      setHeading(heading);
-    };
-  }
-
-  async function enableCompass() {
-    if (compassActive) return;
-
-    // iOS 13+ permission gate
-    try {
-      if (typeof DeviceOrientationEvent !== 'undefined' &&
-          typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const res = await DeviceOrientationEvent.requestPermission();
-        if (res !== 'granted') {
-          headingLabel.textContent = 'Heading: permission denied';
-          return;
-        }
-      }
-    } catch (_) {
-      // Ignore; non-iOS browsers
-    }
-
-    orientationHandler = createOrientationHandler();
-
-    // Prefer absolute if available
-    if ('ondeviceorientationabsolute' in window) {
-      window.addEventListener('deviceorientationabsolute', orientationHandler, true);
-    } else if ('ondeviceorientation' in window) {
-      window.addEventListener('deviceorientation', orientationHandler, true);
-    } else {
-      headingLabel.textContent = 'Heading: not supported';
-      return;
-    }
-
-    compassActive = true;
-    enableBtn.textContent = 'Disable Compass';
-    headingLabel.textContent = 'Heading: -- (move phone)';
-  }
-
-  function disableCompass() {
-    if (!compassActive) return;
-
-    if (orientationHandler) {
-      window.removeEventListener('deviceorientationabsolute', orientationHandler, true);
-      window.removeEventListener('deviceorientation', orientationHandler, true);
-    }
-
-    compassActive = false;
-    orientationHandler = null;
-    enableBtn.textContent = 'Enable Compass';
-    headingLabel.textContent = 'Heading: --';
-
-    // Reset needle to north
-    needle.style.transform = 'translate(-50%, -100%) rotate(0deg)';
-  }
-
-  function toggleCompass() {
-    if (compassActive) {
-      disableCompass();
-    } else {
-      enableCompass();
-    }
-  }
-
-  // Wire up the button
-  enableBtn.addEventListener('click', toggleCompass);
-})();
 
