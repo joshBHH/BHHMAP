@@ -99,20 +99,23 @@ body,
 }
 
 .main-menu button {
-  flex: 1;
-  max-width: 140px;
-  padding: 10px;
-  border: 1px solid #f97316; /* bright orange border */
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35); /* subtle orange glow */
+  flex: 1 1 0;                      /* let every button share the row */
+  min-width: 0;                     /* allow shrinking below content width */
+  max-width: none;
+  padding: 8px 6px;
+  border: 1px solid #f97316;        /* bright orange border */
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35);
   border-radius: 12px;
   background: #14271a;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
-  white-space: nowrap;
+  white-space: normal;              /* allow label to wrap to 2 lines */
+  text-align: center;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
 }
+
 
 
 .wind-btn {
@@ -123,7 +126,7 @@ body,
 }
 
 #windText {
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .wind-arrow {
@@ -371,34 +374,45 @@ body,
     top: 72px;
   }
 
+  @media (max-width: 640px) {
+  :root {
+    --logo-size: 96px;
+  }
+
+  .panel {
+    left: 8px;
+    top: 72px;
+  }
+
   .main-menu {
-    gap: 8px;
-    justify-content: space-around;
-    flex-wrap: wrap;              /* allow multiple rows instead of side-scroll */
-    overflow-x: visible;          /* no horizontal scrolling */
-    padding: 10px 12px calc(12px + var(--safe-bottom));
+    gap: 6px;
+    justify-content: space-between;
+    flex-wrap: nowrap;                 /* ONE row only */
+    overflow-x: hidden;                /* no horizontal scrolling */
+    padding: 8px 8px calc(10px + var(--safe-bottom));
   }
 
   .main-menu::-webkit-scrollbar {
-    height: 0;                    /* hide scrollbar if any */
+    height: 0;                         /* hide scrollbar if any */
   }
 
   .main-menu button {
-    flex: 1 1 calc(33.33% - 8px); /* ~3 buttons per row on small screens */
-    min-width: 0;                 /* let them shrink a bit */
-    max-width: 140px;
-    font-size: 13px;              /* slightly smaller so they fit better */
-    padding: 8px 8px;             /* not bigger than before */
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    font-size: 11px;                   /* slightly smaller on small screens */
+    padding: 6px 4px;
   }
 
   .wind-btn {
-    min-width: 0;                 /* no forced extra width */
+    min-width: 0;                      /* don’t force wider */
   }
 
   #windText {
-    font-size: 10.0px;
+    font-size: 11px;
   }
 }
+
 
 
 @supports (height: 100svh) {
