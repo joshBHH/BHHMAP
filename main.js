@@ -1199,38 +1199,6 @@ document.getElementById('wpDetSave').onclick = ()=>{
 
 
 /*******************
- * FIELD INFO: visibility + draggable
- *******************/
-// [BHH: INFO PANEL LOGIC START]
-const infoPanel = document.getElementById('infoPanel');
-const STORAGE_INFO_VIS = 'ui_info_visible';
-function setInfoVisible(v){ infoPanel.style.display = v? 'block':'none'; localStorage.setItem(STORAGE_INFO_VIS, v? '1':'0'); if(v){ updateSun(); } }
-function getInfoVisible(){ return localStorage.getItem(STORAGE_INFO_VIS) === '1'; }
-setInfoVisible(getInfoVisible());
-
-function makeDraggable(el, handleId, storageKey){
-  const handle = document.getElementById(handleId);
-  let sx=0, sy=0, sl=0, st=0, dragging=false;
-  function point(e){ if(e.touches && e.touches[0]) return {x:e.touches[0].clientX,y:e.touches[0].clientY}; return {x:e.clientX,y:e.clientY}; }
-  function apply(l,t){ const vw=innerWidth, vh=innerHeight; const w=el.offsetWidth, h=el.offsetHeight; l=Math.max(4,Math.min(vw-w-4,l)); t=Math.max(60,Math.min(vh-h-4,t)); el.style.left=l+'px'; el.style.top=t+'px'; }
-  function savePos(){ const r=el.getBoundingClientRect(); localStorage.setItem(storageKey, JSON.stringify({left:r.left, top:r.top})); }
-  function move(e){ if(!dragging) return; const p=point(e); apply(sl+p.x-sx, st+p.y-sy); e.preventDefault(); }
-  function tmove(e){ if(!dragging) return; const p=point(e); apply(sl+p.x-sx, st+p.y-sy); e.preventDefault(); }
-  function up(){ dragging=false; document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); document.removeEventListener('touchmove',tmove); document.removeEventListener('touchend',up); savePos(); }
-  function start(x,y){ dragging=true; sx=x; sy=y; const r=el.getBoundingClientRect(); sl=r.left; st=r.top; document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); document.addEventListener('touchmove',tmove,{passive:false}); document.addEventListener('touchend',up); }
-  function down(e){ const p=point(e); start(p.x,p.y); e.preventDefault(); }
-  function tdown(e){ const p=point(e); start(p.x,p.y); }
-  try{ const s=JSON.parse(localStorage.getItem(storageKey)||'null'); if(s){ el.style.left=s.left+'px'; el.style.top=s.top+'px'; } }catch{}
-  handle.addEventListener('mousedown',down);
-  handle.addEventListener('touchstart',tdown,{passive:false});
-}
-makeDraggable(infoPanel, 'infoHandle', 'ui_info_pos');
-makeDraggable(document.getElementById('bhhLayersBtn'), 'bhhLayersBtnHandle', 'ui_layers_btn_pos');
-makeDraggable(document.getElementById('stateBadge'), 'stateBadge', 'ui_state_badge_pos');
-// [BHH: INFO PANEL LOGIC END]
-
-
-/*******************
  * EXPORT / IMPORT / DELETE MODE (JSON / KML / GPX)
  *******************/
 const btnExport = document.getElementById('btnExport');
