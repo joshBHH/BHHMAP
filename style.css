@@ -107,12 +107,11 @@ body,
   border-radius: 12px;
   background: #14271a;
   color: var(--text);
-  font-size: 13px;
+  font-size: 13px;            /* desktop font size */
   cursor: pointer;
   white-space: nowrap;        /* single line */
   text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;          /* don't clip text */
 }
 
 .wind-btn {
@@ -372,34 +371,30 @@ body,
   }
 
   .main-menu {
-    gap: 6px;
+    gap: 4px;                               /* tighter gap */
     justify-content: space-between;
-    flex-wrap: nowrap;  /* keep single row */
-    overflow-x: hidden; /* no scrolling */
-    padding: 8px 8px calc(10px + var(--safe-bottom));
-  }
-
-  .main-menu::-webkit-scrollbar {
-    height: 0;          /* hide scrollbar if any */
+    flex-wrap: nowrap;                      /* keep single row */
+    overflow-x: hidden;                     /* no scrolling */
+    padding: 6px 6px calc(10px + var(--safe-bottom));
   }
 
   .main-menu button {
     flex: 1 1 0;
     min-width: 0;
     max-width: none;
-    font-size: 11px;
-    padding: 6px 4px;
-    white-space: nowrap;   /* stay one line on mobile too */
-    text-overflow: ellipsis;
+    padding: 4px 2px;                       /* smaller padding */
+    font-size: clamp(8px, 1.8vw, 11px);    /* auto-shrink text */
+    white-space: nowrap;                    /* keep one line */
+    overflow: visible;                      /* do not cut text */
   }
 
   .wind-btn {
     min-width: 0;
-    gap: 6px;
+    gap: 4px;
   }
 
   #windText {
-    font-size: 11px;
+    font-size: clamp(8px, 1.6vw, 10px);
   }
 }
 
