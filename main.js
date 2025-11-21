@@ -586,64 +586,6 @@ map.on('moveend', ()=>{ const anch = localStorage.getItem('cone_a')||'gps'; if(a
 refreshWind(); setInterval(refreshWind, 15*60*1000);
 // [BHH: WIND & SCENT END]
 
-/*******************
- * SUN & MOON (panel + sheet)
- *******************/
-// [BHH: SUN & MOON START]
-function updateSun(){
-  const c = map.getCenter();
-  const now = new Date();
-  const t = SunCalc.getTimes(now, c.lat, c.lng);
-  const fmt = d => d ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
-  document.getElementById('pSunrise').textContent = fmt(t.sunrise);
-  document.getElementById('pSunset').textContent  = fmt(t.sunset);
-  const mins = Math.max(0, (t.sunset - t.sunrise)/60000|0);
-  document.getElementById('pDay').textContent = `${Math.floor(mins/60)}h ${mins%60}m`;
-}
-updateSun(); map.on('moveend', updateSun);
-
-function phaseName(phase){
-  const p = (phase + 1) % 1;
-  if(p < 0.03 || p > 0.97) return 'New Moon';
-  if(p < 0.22) return 'Waxing Crescent';
-  if(p < 0.28) return 'First Quarter';
-  if(p < 0.47) return 'Waxing Gibbous';
-  if(p < 0.53) return 'Full Moon';
-  if(p < 0.72) return 'Waning Gibbous';
-  if(p < 0.78) return 'Last Quarter';
-  return 'Waning Crescent';
-}
-function phaseEmoji(phase){
-  const p=(phase+1)%1;
-  if(p < 0.03 || p > 0.97) return '🌑';
-  if(p < 0.22) return '🌒';
-  if(p < 0.28) return '🌓';
-  if(p < 0.47) return '🌔';
-  if(p < 0.53) return '🌕';
-  if(p < 0.72) return '🌖';
-  if(p < 0.78) return '🌗';
-  return '🌘';
-}
-function renderMoon(){
-  const c = map.getCenter();
-  const now = new Date();
-  const illum = SunCalc.getMoonIllumination(now);
-  const mt = SunCalc.getMoonTimes(now, c.lat, c.lng, true);
-  const fmt = d => d ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
-  const pct = Math.round(illum.fraction*100);
-  let html = `<div class="row"><span>Today</span><strong class="tag">${phaseEmoji(illum.phase)} ${phaseName(illum.phase)} · ${pct}%</strong></div>`
-    + `<div class="row"><span>Moonrise</span><strong class="tag">${fmt(mt.rise)}</strong></div>`
-    + `<div class="row"><span>Moonset</span><strong class="tag">${fmt(mt.set)}</strong></div>`
-    + `<p class="tag" style="margin-top:6px">Next 7 days</p>`;
-  for(let i=1;i<=7;i++){
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()+i);
-    const im = SunCalc.getMoonIllumination(d);
-    const tt = SunCalc.getMoonTimes(d, c.lat, c.lng, true);
-    html += `<div class="row"><span>${d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'})}</span><strong class="tag">${phaseEmoji(im.phase)} ${Math.round(im.fraction*100)}% · ${fmt(tt.rise)} / ${fmt(tt.set)}</strong></div>`;
-  }
-  document.getElementById('moonContent').innerHTML = html;
-}
-// [BHH: SUN & MOON END]
 
 /*******************
  * HUNT SCORE (next 48h)
