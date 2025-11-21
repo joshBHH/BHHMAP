@@ -140,14 +140,6 @@
     makeDraggable(stateBadge, 'stateBadge', 'ui_state_badge_pos');
   }
 
-   // Optional: draggable compass widget (if present in the DOM)
-  const compassWidget = document.getElementById('compassWidget');
-  if (compassWidget) {
-    // Uses #compassWidgetHandle as the drag handle
-    makeDraggable(compassWidget, 'compassWidgetHandle', 'ui_compass_pos');
-  }
-
-
 
   // Expose a small API for other scripts
   window.BHH = window.BHH || {};
