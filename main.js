@@ -658,13 +658,15 @@ function updateCompassDial(){
   if (!needle) return;
 
   const h = deviceHeading;
-  // flip 180° so the TIP of the triangle matches the heading
-  const rotation = (h == null ? 0 : (h + 180));
+  // 0° = arrow pointing up (North), 90° = East, etc.
+  const rotation = (h == null ? 0 : h);
 
-  // base of triangle stays at center, tip sweeps around the ring
+  // IMPORTANT: match your CSS initial transform:
+  // left:50%, top:50%, translate(-50%, -50%) so the BASE stays in the center
   needle.style.transform =
-    'translate(-50%, 0) rotate(' + rotation + 'deg)';
+    'translate(-50%, -50%) rotate(' + rotation + 'deg)';
 }
+
 
 function setGuideTarget(id){
   guideTargetId = id || '';
