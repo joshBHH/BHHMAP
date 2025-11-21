@@ -631,7 +631,7 @@ function updateCompassDial(){
   if (!needle) return;
 
   const h = deviceHeading;
-  const rotation = (h == null ? 0 : h); // 0 = north
+  const rotation = (h == null ? 0 : (h + 180)); // flip 180° so tip matches heading
   // Base of triangle stays at the exact center of the ring
   needle.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
 }
