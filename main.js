@@ -601,14 +601,12 @@ refreshWind(); setInterval(refreshWind, 15*60*1000);
  * COMPASS + BEARING
  *******************/
 // [BHH: COMPASS START]
-const compEnableBtn    = document.getElementById('compEnable');
-const compHeadingText  = document.getElementById('compHeadingText');
-const compTargetSel    = document.getElementById('compTarget');
-const compAnchorRadios = Array.from(document.querySelectorAll('input[name="compAnchor"]'));
-const compDist         = document.getElementById('compDist');
-const compBear         = document.getElementById('compBear');
-const compassWidget    = document.getElementById('compassWidget');
-const toolCompassRow   = document.getElementById('toolCompass');
+const compHeadingText   = document.getElementById('compHeadingText');
+const compTargetSel     = document.getElementById('compTarget');
+const compAnchorRadios  = Array.from(document.querySelectorAll('input[name="compAnchor"]'));
+const compDist          = document.getElementById('compDist');
+const compBear          = document.getElementById('compBear');
+const compEnableBtn     = document.getElementById('compEnable'); // still exists in the sheet
 
 let deviceHeading = null;
 let guideTargetId = localStorage.getItem('guide_target') || '';
@@ -618,41 +616,19 @@ function toRad2(x){ return x * Math.PI / 180; }
 function toDeg2(x){ return x * 180 / Math.PI; }
 
 function bearingDeg(a, b){
-  const y = Math.sin(toRad2(b.lng - a.lng)) * Math.cos(toRad2(b.lat));
+  const y =
+    Math.sin(toRad2(b.lng - a.lng)) *
+    Math.cos(toRad2(b.lat));
+
   const x =
     Math.cos(toRad2(a.lat)) * Math.sin(toRad2(b.lat)) -
     Math.sin(toRad2(a.lat)) * Math.cos(toRad2(b.lat)) *
     Math.cos(toRad2(b.lng - a.lng));
+
   return (toDeg2(Math.atan2(y, x)) + 360) % 360;
 }
 
-function updateCompassDial(){
-  const needle = document.getElementById('compassNeedle');
-  if (!needle) return;
-
-  const h = deviceHeading;
-  const rotation = (h == null ? 0 : (h + 180)); // flip 180° so tip matches heading
-  // Base of triangle stays at the exact center of the ring
-  needle.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-}
-
-function updateCompassReadout(){
-  if (!compHeadingText) return;
-  const h = deviceHeading;
-
-  if (h == null) {
-    compHeadingText.textContent = 'Heading: --';
-  } else {
-    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
-    const card = dirs[Math.round(h / 45) % 8];
-    compHeadingText.textContent = `Heading: ${Math.round(h)}° ${card}`;
-  }
-  updateGuideLine();
-}
-
 function rebuildCompassTargets(){
-  if (!compTargetSel) return;
-
   const wps = [];
   markersLayer.eachLayer(m => {
     const { lat, lng } = m.getLatLng();
@@ -666,16 +642,28 @@ function rebuildCompassTargets(){
     });
   });
 
-  const optsHtml = ['<option value="">(none)</option>']
-    .concat(wps.map(w =>
-      `<option value="${w.id}">${w.name} — ${w.type}</option>`
-    ));
+  const opts = ['<option value="">(none)</option>']
+    .concat(
+      wps.map(w =>
+        `<option value="${w.id}">${w.name} — ${w.type}</option>`
+      )
+    );
 
-  compTargetSel.innerHTML = optsHtml.join('');
+  compTargetSel.innerHTML = opts.join('');
+  if (guideTargetId) compTargetSel.value = guideTargetId;
+}
 
-  if (guideTargetId) {
-    compTargetSel.value = guideTargetId;
-  }
+function updateCompassDial(){
+  const needle = document.getElementById('compassNeedle');
+  if (!needle) return;
+
+  const h = deviceHeading;
+  // flip 180° so the TIP of the triangle matches the heading
+  const rotation = (h == null ? 0 : (h + 180));
+
+  // base of triangle stays at center, tip sweeps around the ring
+  needle.style.transform =
+    'translate(-50%, 0) rotate(' + rotation + 'deg)';
 }
 
 function setGuideTarget(id){
@@ -685,9 +673,9 @@ function setGuideTarget(id){
   updateGuideLine();
 }
 
-if (compTargetSel) {
-  compTargetSel.addEventListener('change', () => setGuideTarget(compTargetSel.value));
-}
+compTargetSel.addEventListener('change', () => {
+  setGuideTarget(compTargetSel.value);
+});
 
 function compOrigin(){
   const mode = (compAnchorRadios.find(r => r.checked) || {}).value || 'gps';
@@ -702,8 +690,8 @@ function updateGuideLine(){
 
   if (!guideTargetId) {
     guideLine.setLatLngs([]);
-    if (compDist) compDist.textContent = '--';
-    if (compBear) compBear.textContent = '--';
+    compDist.textContent = '--';
+    compBear.textContent = '--';
     return;
   }
 
@@ -714,8 +702,8 @@ function updateGuideLine(){
 
   if (!targetMarker) {
     guideLine.setLatLngs([]);
-    if (compDist) compDist.textContent = '--';
-    if (compBear) compBear.textContent = '--';
+    compDist.textContent = '--';
+    compBear.textContent = '--';
     return;
   }
 
@@ -723,31 +711,33 @@ function updateGuideLine(){
   guideLine.setLatLngs([origin, target]);
 
   const d = map.distance(origin, target);
-  if (compDist) {
-    compDist.textContent =
-      (d >= 1609.344)
-        ? (d / 1609.344).toFixed(2) + ' mi'
-        : Math.round(d * 3.28084) + ' ft';
-  }
+  compDist.textContent =
+    d >= 1609.344
+      ? (d / 1609.344).toFixed(2) + ' mi'
+      : Math.round(d * 3.28084) + ' ft';
 
-  const brg = bearingDeg(origin, target);
+  const brg  = bearingDeg(origin, target);
   const dirs = ['N','NE','E','SE','S','SW','W','NW'];
   const card = dirs[Math.round(brg / 45) % 8];
-  if (compBear) {
-    compBear.textContent = `${Math.round(brg)}° ${card}`;
-  }
+  compBear.textContent = Math.round(brg) + '° ' + card;
 }
 
-compAnchorRadios.forEach(r =>
-  r.addEventListener('change', () => updateGuideLine())
-);
+function updateCompassReadout(){
+  const h = deviceHeading;
 
-map.on('moveend', () => {
-  const mode = (compAnchorRadios.find(r => r.checked) || {}).value || 'gps';
-  if (mode === 'center') updateGuideLine();
-});
+  if (h == null) {
+    compHeadingText.textContent = 'Heading: --';
+  } else {
+    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    const card = dirs[Math.round(h / 45) % 8];
+    compHeadingText.textContent =
+      'Heading: ' + Math.round(h) + '° ' + card;
+  }
 
-// Device orientation → heading
+  updateGuideLine();
+  updateCompassDial();
+}
+
 function onDeviceOrientation(e){
   let hdg = null;
 
@@ -755,73 +745,65 @@ function onDeviceOrientation(e){
   if (typeof e.webkitCompassHeading === 'number') {
     hdg = e.webkitCompassHeading;
   } else if (typeof e.alpha === 'number') {
-    // Generic browsers
+    // generic: convert alpha to compass heading
     hdg = (360 - e.alpha) % 360;
   }
 
   if (hdg == null || isNaN(hdg)) return;
+
   deviceHeading = hdg;
   updateCompassReadout();
 }
 
-// Set up compass: mobile vs desktop behavior
-function enableCompassInternal(){
-  if (!IS_MOBILE) return;
+async function startCompass(){
+  // Auto-enable on mobile; still may show browser permission prompt on iOS
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== 'granted') {
+        compHeadingText.textContent = 'Heading: permission denied';
+        return;
+      }
+    }
+  } catch (_) {
+    // Non-iOS browsers: ignore
+  }
 
   if ('ondeviceorientationabsolute' in window) {
     window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
   } else if ('ondeviceorientation' in window) {
     window.addEventListener('deviceorientation', onDeviceOrientation, true);
-  } else if (compHeadingText) {
+  } else {
     compHeadingText.textContent = 'Heading: not supported';
+    return;
   }
 
-  // Keep GPS updated so bearing-to-target uses live position
-  try {
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(pos => {
-        lastGPS = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
-        };
-        updateGuideLine();
-      }, () => {}, { enableHighAccuracy:true, maximumAge:4000 });
-    }
-  } catch (_) {}
-}
-
-// Desktop: hide compass UI completely
-if (!IS_MOBILE) {
-  if (compassWidget) compassWidget.style.display = 'none';
-  if (toolCompassRow) toolCompassRow.style.display = 'none';
-} else {
-  // Mobile: auto-enable where allowed, fallback to button on iOS
-  const needsTapPermission =
-    typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function';
-
-  if (!needsTapPermission) {
-    // Android / older browsers: just enable it
-    enableCompassInternal();
-  } else if (compEnableBtn) {
-    // iOS: user must tap a button once to grant permission
-    compEnableBtn.addEventListener('click', async () => {
-      try {
-        const resp = await DeviceOrientationEvent.requestPermission();
-        if (resp === 'granted') {
-          enableCompassInternal();
-        } else if (compHeadingText) {
-          compHeadingText.textContent = 'Heading: permission denied';
-        }
-      } catch (_) {
-        if (compHeadingText) {
-          compHeadingText.textContent = 'Heading: not supported';
-        }
-      }
-    });
+  // Keep origin updated via GPS if available (so guide line behaves)
+  if (navigator.geolocation && !gpsWatchId) {
+    ensureGPSWatch(false);
   }
 }
 
+// Auto-start compass on touch / coarse-pointer devices
+if (window.matchMedia('(pointer: coarse)').matches) {
+  startCompass();
+}
+
+// Also let the "Enable Compass" button manually force it (as backup)
+if (compEnableBtn) {
+  compEnableBtn.addEventListener('click', startCompass);
+}
+
+// Keep guide line in sync when anchor changes or map moves
+compAnchorRadios.forEach(r => r.addEventListener('change', updateGuideLine));
+map.on('moveend', () => {
+  const mode = (compAnchorRadios.find(r => r.checked) || {}).value || 'gps';
+  if (mode === 'center') updateGuideLine();
+});
+
+// Build initial target list once on load
+rebuildCompassTargets();
 // [BHH: COMPASS END]
 
 
