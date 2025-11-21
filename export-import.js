@@ -533,38 +533,171 @@
   }
 
   /* ---------- EXPORT ACTION ---------- */
-  if (btnExport) {
-    btnExport.onclick = () => {
-      const choice = (
-        prompt('Export format: json | kml | gpx', 'json') || 'json'
-      )
-        .trim()
-        .toLowerCase();
+  // ---- Export dialog UI ----
+if (btnExport) {
+  btnExport.onclick = () => {
+    showExportDialog();
+  };
+}
 
-      try {
-        if (choice === 'kml') {
-          const kml = buildKML();
-          downloadText(
-            'buckeyehunterhub.kml',
-            kml,
-            'application/vnd.google-earth.kml+xml'
-          );
-        } else if (choice === 'gpx') {
-          const gpx = buildGPX();
-          downloadText('buckeyehunterhub.gpx', gpx, 'application/gpx+xml');
-        } else {
-          const all = collectAll();
-          downloadText(
-            'buckeyehunterhub-export.json',
-            JSON.stringify(all, null, 2),
-            'application/json'
-          );
-        }
-      } catch (e) {
-        alert('Export failed: ' + e.message);
-      }
-    };
+function showExportDialog() {
+  // Remove existing dialog if somehow still there
+  const existing = document.getElementById('bhhExportOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'bhhExportOverlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.zIndex = '1600';
+  overlay.style.background = 'rgba(0,0,0,0.45)';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+
+  const panel = document.createElement('div');
+  panel.style.minWidth = '260px';
+  panel.style.maxWidth = '320px';
+  panel.style.padding = '16px 18px';
+  panel.style.borderRadius = '14px';
+  panel.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+  panel.style.background = 'var(--panel, #101f14)';
+  panel.style.border = '1px solid #203325';
+  panel.style.color = 'var(--text, #e7f1e8)';
+  panel.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  panel.style.fontSize = '14px';
+
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 style="margin:0;font-size:15px;">Export data</h3>
+      <button type="button" id="bhhExportClose" style="
+        border:1px solid #25432b;
+        background:#14271a;
+        color:inherit;
+        border-radius:10px;
+        width:26px;
+        height:26px;
+        cursor:pointer;
+        font-size:16px;
+        line-height:22px;
+        text-align:center;
+      ">&times;</button>
+    </div>
+    <p style="margin:0 0 10px;color:#a3b7a6;font-size:13px;">
+      Choose a format to export your map data.
+    </p>
+
+    <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;cursor:pointer;">
+      <input type="radio" name="bhhExportFormat" value="json" checked
+        style="margin-top:3px;">
+      <div>
+        <div style="font-weight:600;">JSON – Full BHH backup</div>
+        <div style="font-size:12px;color:#a3b7a6;">
+          Best for restoring or moving everything between browsers/devices.
+          Keeps waypoints, types, icons, notes, photos, drawings, and track.
+        </div>
+      </div>
+    </label>
+
+    <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;cursor:pointer;">
+      <input type="radio" name="bhhExportFormat" value="kml"
+        style="margin-top:3px;">
+      <div>
+        <div style="font-weight:600;">KML – Map apps / Google Earth</div>
+        <div style="font-size:12px;color:#a3b7a6;">
+          Good for Google Earth and other map apps. Includes BHH metadata
+          (types, notes, photos) when you import back into this map.
+          Other apps may ignore the extra info.
+        </div>
+      </div>
+    </label>
+
+    <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;cursor:pointer;">
+      <input type="radio" name="bhhExportFormat" value="gpx"
+        style="margin-top:3px;">
+      <div>
+        <div style="font-weight:600;">GPX – GPS / hunting apps</div>
+        <div style="font-size:12px;color:#a3b7a6;">
+          Common for GPS devices and hunting apps. Also carries BHH metadata
+          for re-import here, but most external apps will only use the basic
+          points/lines/track.
+        </div>
+      </div>
+    </label>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+      <button type="button" id="bhhExportCancel" style="
+        padding:6px 10px;
+        border-radius:10px;
+        border:1px solid #25432b;
+        background:#14271a;
+        color:inherit;
+        cursor:pointer;
+        font-size:13px;
+      ">Cancel</button>
+      <button type="button" id="bhhExportConfirm" style="
+        padding:6px 12px;
+        border-radius:10px;
+        border:1px solid #6dbc5d;
+        background:#1c3823;
+        color:inherit;
+        cursor:pointer;
+        font-size:13px;
+        font-weight:600;
+      ">Export</button>
+    </div>
+  `;
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  function closeDialog() {
+    overlay.remove();
   }
+
+  // Close on background click (but not when clicking the panel itself)
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeDialog();
+  });
+
+  panel.querySelector('#bhhExportClose').onclick = closeDialog;
+  panel.querySelector('#bhhExportCancel').onclick = closeDialog;
+
+  panel.querySelector('#bhhExportConfirm').onclick = () => {
+    const selected = panel.querySelector('input[name="bhhExportFormat"]:checked');
+    const choice = selected ? selected.value : 'json';
+    closeDialog();
+    doExport(choice);
+  };
+}
+
+function doExport(choice) {
+  const fmt = (choice || 'json').trim().toLowerCase();
+
+  try {
+    if (fmt === 'kml') {
+      const kml = buildKML();
+      downloadText(
+        'buckeyehunterhub.kml',
+        kml,
+        'application/vnd.google-earth.kml+xml'
+      );
+    } else if (fmt === 'gpx') {
+      const gpx = buildGPX();
+      downloadText('buckeyehunterhub.gpx', gpx, 'application/gpx+xml');
+    } else {
+      const all = collectAll();
+      downloadText(
+        'buckeyehunterhub-export.json',
+        JSON.stringify(all, null, 2),
+        'application/json'
+      );
+    }
+  } catch (e) {
+    alert('Export failed: ' + e.message);
+  }
+}
+
 
   /* ---------- IMPORT ACTION ---------- */
   if (btnImport && fileInput) {
