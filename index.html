@@ -107,24 +107,24 @@
     <!-- [BHH: UI – BOTTOM MENU START] -->
     <!-- Bottom main menu (no Radar button) -->
     <nav class="main-menu" id="mainMenu">
-      <button id="menuWind" class="wind-btn">
-        <span class="wind-arrow" id="windArrow"></span
-        ><span id="windText">Wind: --</span>
-      </button>
-      <button id="menuAlmanac">Almanac</button>
-      <button id="menuTools">Tools</button>
-      <button id="btnDeleteMode">Delete: Off</button>
-      <button id="menuState">State</button>
-      <button id="btnExport">Export</button>
-      <button id="btnImport">Import</button>
-      <button id="menuLocate">Locate Me</button>
-      <input
-        type="file"
-        id="fileImport"
-        accept=".json,.geojson,.kml,.gpx,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,application/xml"
-        style="display: none;"
-      />
-    </nav>
+  <button id="menuWind" class="wind-btn">
+    <span class="wind-arrow" id="windArrow"></span>
+    <span id="windText">Wind: --</span>
+  </button>
+  <button id="menuAlmanac">Almanac</button>
+  <button id="menuTools">Tools</button>
+  <button id="menuShop">Shop Gear</button>
+  <button id="menuLocate">Locate Me</button>
+
+  <!-- Hidden file input for imports (unchanged) -->
+  <input
+    type="file"
+    id="fileImport"
+    accept=".json,.geojson,.kml,.gpx,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,application/xml"
+    style="display: none;"
+  />
+</nav>
+
     <!-- [BHH: UI – BOTTOM MENU END] -->
 
     <!-- Shared backdrop for sheets -->
@@ -198,34 +198,57 @@
 
     <!-- Tools sheet -->
     <div class="sheet" id="toolsSheet" aria-hidden="true">
-      <div class="grab"></div>
+  <div class="grab"></div>
 
-      <h4>Tools</h4>
+  <h4>Tools</h4>
 
-      <div class="option" id="toolWaypoints">
-        <span>Waypoints</span>
-        <button class="btn">Open</button>
-      </div>
+  <!-- Waypoints manager -->
+  <div class="option" id="toolWaypoints">
+    <span>Waypoints</span>
+    <button class="btn">Open</button>
+  </div>
 
-      <div class="option" id="toolTrack">
-        <span>Track</span>
-        <button class="btn">Open</button>
-      </div>
+  <!-- Track recorder -->
+  <div class="option" id="toolTrack">
+    <span>Track</span>
+    <button class="btn">Open</button>
+  </div>
 
-      <div class="option" id="toolCompass">
-        <span>Compass</span>
-        <button class="btn">Open</button>
-      </div>
+  <!-- Compass -->
+  <div class="option" id="toolCompass">
+    <span>Compass</span>
+    <button class="btn">Open</button>
+  </div>
 
-      <div class="option">
-        <span>Delete mode</span>
-        <input id="toolDeleteToggle" type="checkbox" />
-      </div>
+  <!-- State selector (moved here from bottom bar) -->
+  <div class="option" id="toolState">
+    <span>Change State</span>
+    <button class="btn" id="menuState">Open</button>
+  </div>
 
-      <p class="tag">
-        Tip: “Delete mode” lets you tap items on the map to remove them.
-      </p>
-    </div>
+  <!-- Export (moved here from bottom bar, keeps same IDs) -->
+  <div class="option" id="toolExport">
+    <span>Export data</span>
+    <button class="btn" id="btnExport">Export</button>
+  </div>
+
+  <!-- Import (moved here from bottom bar, keeps same IDs) -->
+  <div class="option" id="toolImport">
+    <span>Import data</span>
+    <button class="btn" id="btnImport">Import</button>
+  </div>
+
+  <!-- Delete mode toggle (now only in Tools) -->
+  <div class="option">
+    <span>Delete mode</span>
+    <input id="toolDeleteToggle" type="checkbox" />
+  </div>
+
+  <p class="tag">
+    Tip: “Delete mode” lets you tap items on the map to remove them.
+  </p>
+</div>
+
 
     <!-- Waypoints + Shapes manager sheet -->
     <div class="sheet" id="waypointsSheet" aria-hidden="true">
