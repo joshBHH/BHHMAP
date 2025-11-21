@@ -22,7 +22,7 @@ body,
   font-family: system-ui, Roboto, Arial, sans-serif;
 }
 
-/* Full screen map on mobile */
+/* Full screen map */
 #map {
   position: fixed;
   inset: 0;
@@ -32,7 +32,6 @@ body,
 #map.placing {
   cursor: crosshair;
 }
-
 
 /* Info panel (smaller + draggable) */
 .panel {
@@ -76,7 +75,7 @@ body,
   color: var(--subtle);
 }
 
-/* Bottom main menu */
+/* Bottom main menu (desktop defaults) */
 .main-menu {
   position: fixed;
   left: 0;
@@ -95,28 +94,26 @@ body,
   );
   backdrop-filter: blur(8px);
   border-top: 1px solid #203325;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;          /* one row */
 }
 
 .main-menu button {
-  flex: 1 1 0;                      /* let every button share the row */
-  min-width: 0;                     /* allow shrinking below content width */
+  flex: 1 1 0;                /* share row evenly */
+  min-width: 0;               /* allow shrinking */
   max-width: none;
   padding: 8px 6px;
-  border: 1px solid #f97316;        /* bright orange border */
+  border: 1px solid #f97316;  /* bright orange border */
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35);
   border-radius: 12px;
   background: #14271a;
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
-  white-space: normal;              /* allow label to wrap to 2 lines */
+  white-space: nowrap;        /* single line */
   text-align: center;
   overflow: hidden;
-  text-overflow: clip;
+  text-overflow: ellipsis;
 }
-
-
 
 .wind-btn {
   display: flex;
@@ -374,46 +371,37 @@ body,
     top: 72px;
   }
 
-  @media (max-width: 640px) {
-  :root {
-    --logo-size: 96px;
-  }
-
-  .panel {
-    left: 8px;
-    top: 72px;
-  }
-
   .main-menu {
     gap: 6px;
     justify-content: space-between;
-    flex-wrap: nowrap;                 /* ONE row only */
-    overflow-x: hidden;                /* no horizontal scrolling */
+    flex-wrap: nowrap;  /* keep single row */
+    overflow-x: hidden; /* no scrolling */
     padding: 8px 8px calc(10px + var(--safe-bottom));
   }
 
   .main-menu::-webkit-scrollbar {
-    height: 0;                         /* hide scrollbar if any */
+    height: 0;          /* hide scrollbar if any */
   }
 
   .main-menu button {
     flex: 1 1 0;
     min-width: 0;
     max-width: none;
-    font-size: 11px;                   /* slightly smaller on small screens */
+    font-size: 11px;
     padding: 6px 4px;
+    white-space: nowrap;   /* stay one line on mobile too */
+    text-overflow: ellipsis;
   }
 
   .wind-btn {
-    min-width: 0;                      /* don’t force wider */
+    min-width: 0;
+    gap: 6px;
   }
 
   #windText {
     font-size: 11px;
   }
 }
-
-
 
 @supports (height: 100svh) {
   #map {
@@ -432,7 +420,7 @@ body,
 #bhhLayersBtn button {
   background: #14271a;
   color: var(--text);
-  border: 1px solid #25432b;
+  border: 1px solid #f97316;  /* match main buttons */
   border-radius: 12px;
   padding: 8px 12px;
   box-shadow: var(--shadow);
@@ -445,73 +433,74 @@ body,
 }
 
 /* Compass widget */
-#compassWidget{
-  position:fixed;
-  bottom:90px;
-  right:12px;
-  z-index:1300;
+#compassWidget {
+  position: fixed;
+  bottom: 90px;
+  right: 12px;
+  z-index: 1300;
 }
 
-.compass-ring{
-  position:relative;
-  width:68px;
-  height:68px;
-  border-radius:50%;
-  background:radial-gradient(circle at 30% 30%, #243624 0, #101f14 55%, #070d09 100%);
-  border:2px solid #3b4f3c;
-  box-shadow:0 8px 20px rgba(0,0,0,.55);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:grab;
+.compass-ring {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #243624 0, #101f14 55%, #070d09 100%);
+  border: 2px solid #3b4f3c;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
 }
 
-.compass-ring:active{
-  cursor:grabbing;
+.compass-ring:active {
+  cursor: grabbing;
 }
 
 /* N/E/S/W labels */
-.compass-label{
-  position:absolute;
-  font-size:11px;
-  font-weight:600;
-  color:#d7e6d8;
-  text-shadow:0 1px 2px rgba(0,0,0,.7);
-  pointer-events:none;
-  user-select:none;
+.compass-label {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 600;
+  color: #d7e6d8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  user-select: none;
 }
-.compass-label.n{ top:4px; left:50%; transform:translateX(-50%); }
-.compass-label.s{ bottom:4px; left:50%; transform:translateX(-50%); }
-.compass-label.e{ right:4px; top:50%; transform:translateY(-50%); }
-.compass-label.w{ left:4px; top:50%; transform:translateY(-50%); }
+
+.compass-label.n { top: 4px;  left: 50%; transform: translateX(-50%); }
+.compass-label.s { bottom: 4px; left: 50%; transform: translateX(-50%); }
+.compass-label.e { right: 4px; top: 50%; transform: translateY(-50%); }
+.compass-label.w { left: 4px;  top: 50%; transform: translateY(-50%); }
 
 /* Needle */
-.compass-needle{
-  position:absolute;
-  bottom:50%;
-  left:50%;
-  width:0;
-  height:0;
-  border-left:5px solid transparent;
-  border-right:5px solid transparent;
-  border-bottom:26px solid #f97316; /* orange-ish */
-  transform:translate(-50%, -100%) rotate(0deg);
-  transform-origin:50% 100%;
-  filter:drop-shadow(0 1px 3px rgba(0,0,0,.8));
+.compass-needle {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 26px solid #f97316; /* orange-ish */
+  transform: translate(-50%, -100%) rotate(0deg);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
 }
 
 /* Tiny pivot circle */
-.compass-needle::after{
-  content:'';
-  position:absolute;
-  left:50%;
-  bottom:-4px;
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  background:#111;
-  border:2px solid #e5e7eb;
-  transform:translate(-50%, -50%);
+.compass-needle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #111;
+  border: 2px solid #e5e7eb;
+  transform: translate(-50%, -50%);
 }
 
 /* [BHH: STYLES END] */
