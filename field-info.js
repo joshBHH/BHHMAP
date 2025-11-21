@@ -1,5 +1,5 @@
 // field-info.js
-// Handles the Field Info panel visibility + dragging of panel, layers button, and state badge
+// Handles the Field Info panel visibility + dragging of panel, layers button, state badge, and compass
 (() => {
   const STORAGE_INFO_VIS = 'ui_info_visible';
   const infoPanel = document.getElementById('infoPanel');
@@ -28,7 +28,7 @@
     }
   }
 
-  /** Generic draggable helper used for the panel, layers button, and state badge */
+  /** Generic draggable helper used for the panel, layers button, state badge, and compass */
   function makeDraggable(el, handleId, storageKey) {
     if (!el) return;
     const handle = document.getElementById(handleId);
@@ -52,6 +52,8 @@
       t = Math.max(60, Math.min(vh - h - 4, t));
       el.style.left = l + 'px';
       el.style.top = t + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
     }
 
     function savePos() {
@@ -117,6 +119,8 @@
       if (s && typeof s.left === 'number' && typeof s.top === 'number') {
         el.style.left = s.left + 'px';
         el.style.top = s.top + 'px';
+        el.style.right = 'auto';
+        el.style.bottom = 'auto';
       }
     } catch (_) {}
 
@@ -125,21 +129,30 @@
   }
 
   // ---- Init ----
+
+  // Field Info panel
   if (infoPanel) {
     setInfoVisible(getInfoVisible());
     makeDraggable(infoPanel, 'infoHandle', 'ui_info_pos');
   }
 
+  // Floating layers button
   const layersBtn = document.getElementById('bhhLayersBtn');
   if (layersBtn) {
     makeDraggable(layersBtn, 'bhhLayersBtnHandle', 'ui_layers_btn_pos');
   }
 
+  // State badge
   const stateBadge = document.getElementById('stateBadge');
   if (stateBadge) {
     makeDraggable(stateBadge, 'stateBadge', 'ui_state_badge_pos');
   }
 
+  // NEW: Compass widget (bottom-right)
+  const compassWidget = document.getElementById('compassWidget');
+  if (compassWidget) {
+    makeDraggable(compassWidget, 'compassWidgetHandle', 'ui_compass_pos');
+  }
 
   // Expose a small API for other scripts
   window.BHH = window.BHH || {};
