@@ -461,32 +461,33 @@ body,
 .compass-label.w { left: 4px;  top: 50%; transform: translateY(-50%); }
 
 /* Needle */
-.compass-needle {
-  position: absolute;
-  bottom: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 26px solid #f97316; /* orange-ish */
-  transform: translate(-50%, -100%) rotate(0deg);
-  transform-origin: 50% 100%;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+.compass-needle{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:36px;              /* length of the bar */
+  height:4px;              /* thickness of the bar */
+  background:linear-gradient(to right, #fec89a, #f97316);
+  border-radius:999px;
+  transform:translate(-50%, -50%) rotate(0deg);
+  transform-origin:50% 50%;  /* rotate around center of the bar */
+  box-shadow:0 1px 3px rgba(0,0,0,.8);
 }
 
-/* Tiny pivot circle */
-.compass-needle::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #111;
-  border: 2px solid #e5e7eb;
-  transform: translate(-50%, -50%);
+/* arrow tip on one end */
+.compass-needle::before{
+  content:'';
+  position:absolute;
+  right:-6px;
+  top:50%;
+  transform:translateY(-50%);
+  width:0;
+  height:0;
+  border-top:6px solid transparent;
+  border-bottom:6px solid transparent;
+  border-left:10px solid #f97316;
 }
+
+
 
 /* [BHH: STYLES END] */
