@@ -506,14 +506,21 @@ loadTrack();
 // [BHH: WIND & SCENT START]
 const btnWind = document.getElementById('menuWind');
 const windText = document.getElementById('windText');
-const windArrow = document.getElementById('windArrow');
 
 
 let currentWind = { fromDeg: null, speed: 0 };
 let lastGPS = null;
 
 function degToCardinal(d){ const dirs = ['N','NE','E','SE','S','SW','W','NW']; return dirs[Math.round(d/45)%8]; }
-function updateWindUI(fromDeg, speed){ const toDeg = (fromDeg + 180) % 360; const from = degToCardinal(fromDeg); const to = degToCardinal(toDeg); windArrow.style.transform = `rotate(${toDeg}deg)`; windText.textContent = `Wind: ${from} → ${to}  ${Math.round(speed)} mph`; }
+function updateWindUI(fromDeg, speed){
+  const toDeg = (fromDeg + 180) % 360;
+  const from = degToCardinal(fromDeg);
+  const to = degToCardinal(toDeg);
+
+  // Keep the textual direction so it can be used with the compass
+  windText.textContent = `Wind: ${from} → ${to}  ${Math.round(speed)} mph`;
+}
+
 
 async function fetchWindAt(lat, lng){ const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=mph`; const r = await fetch(url); if(!r.ok) throw new Error('wind fetch failed'); const j = await r.json(); const cur = j.current || j.current_weather || {}; const speed = cur.wind_speed_10m ?? cur.windspeed ?? 0; const dir = cur.wind_direction_10m ?? cur.winddirection ?? 0; currentWind = { fromDeg: dir, speed }; updateWindUI(dir, speed); updateScentCone(); }
 
