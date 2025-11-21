@@ -102,7 +102,8 @@ body,
   flex: 1;
   max-width: 140px;
   padding: 10px;
-  border: 1px solid #25432b;
+  border: 1px solid #f97316; /* bright orange border */
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35); /* subtle orange glow */
   border-radius: 12px;
   background: #14271a;
   color: var(--text);
@@ -112,6 +113,7 @@ body,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 
 .wind-btn {
   display: flex;
