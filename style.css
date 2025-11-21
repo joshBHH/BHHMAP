@@ -445,4 +445,75 @@ body,
 #bhhLayersBtn button:active {
   cursor: grabbing;
 }
+
+/* Compass widget */
+#compassWidget{
+  position:fixed;
+  bottom:90px;
+  right:12px;
+  z-index:1300;
+}
+
+.compass-ring{
+  position:relative;
+  width:68px;
+  height:68px;
+  border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #243624 0, #101f14 55%, #070d09 100%);
+  border:2px solid #3b4f3c;
+  box-shadow:0 8px 20px rgba(0,0,0,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:grab;
+}
+
+.compass-ring:active{
+  cursor:grabbing;
+}
+
+/* N/E/S/W labels */
+.compass-label{
+  position:absolute;
+  font-size:11px;
+  font-weight:600;
+  color:#d7e6d8;
+  text-shadow:0 1px 2px rgba(0,0,0,.7);
+  pointer-events:none;
+  user-select:none;
+}
+.compass-label.n{ top:4px; left:50%; transform:translateX(-50%); }
+.compass-label.s{ bottom:4px; left:50%; transform:translateX(-50%); }
+.compass-label.e{ right:4px; top:50%; transform:translateY(-50%); }
+.compass-label.w{ left:4px; top:50%; transform:translateY(-50%); }
+
+/* Needle */
+.compass-needle{
+  position:absolute;
+  bottom:50%;
+  left:50%;
+  width:0;
+  height:0;
+  border-left:5px solid transparent;
+  border-right:5px solid transparent;
+  border-bottom:26px solid #f97316; /* orange-ish */
+  transform:translate(-50%, -100%) rotate(0deg);
+  transform-origin:50% 100%;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.8));
+}
+
+/* Tiny pivot circle */
+.compass-needle::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  bottom:-4px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#111;
+  border:2px solid #e5e7eb;
+  transform:translate(-50%, -50%);
+}
+
 /* [BHH: STYLES END] */
