@@ -32,7 +32,7 @@
   }
 
   /* ---------- EXPORT BUILDERS ---------- */
-  /** Collect current state from globals/localStorage */
+  /** Collect current state */
   function collectAll() {
     const drawings = JSON.parse(
       localStorage.getItem('bhh_drawings_v6') ||
@@ -41,20 +41,21 @@
 
     const markers = (() => {
       const out = [];
-      if (!window.markersLayer) return out;
-
-      window.markersLayer.eachLayer(m => {
-        const { lat, lng } = m.getLatLng();
-        out.push({
-          id: m.options.id,
-          name: m.options.name,
-          type: m.options.type,
-          lat,
-          lng,
-          notes: m.options.notes || '',
-          photo: m.options.photo || '',
+      // markersLayer is defined in main.js
+      if (typeof markersLayer !== 'undefined' && markersLayer.eachLayer) {
+        markersLayer.eachLayer(m => {
+          const { lat, lng } = m.getLatLng();
+          out.push({
+            id: m.options.id,
+            name: m.options.name,
+            type: m.options.type,
+            lat,
+            lng,
+            notes: m.options.notes || '',
+            photo: m.options.photo || '',
+          });
         });
-      });
+      }
       return out;
     })();
 
@@ -71,8 +72,8 @@
 
   /** Convert a Leaflet circle to a polygon ring (for KML/GPX export) */
   function circleToRing(lat, lng, radiusM, segments = 64) {
-    // uses destPoint(lat, lng, bearing, distM) defined globally in main JS
-    if (typeof window.destPoint !== 'function') {
+    // uses destPoint(lat, lng, bearing, distM) defined in main.js (wind section)
+    if (typeof destPoint !== 'function') {
       console.warn('[BHH] destPoint missing; circles may not export correctly.');
       return [];
     }
@@ -80,12 +81,12 @@
     const pts = [];
     for (let i = 0; i <= segments; i++) {
       const ang = (i / segments) * 360;
-      pts.push(window.destPoint(lat, lng, ang, radiusM));
+      pts.push(destPoint(lat, lng, ang, radiusM));
     }
     return pts;
   }
 
-  /** Build KML from current state */
+  /** Build KML */
   function buildKML() {
     const { drawings, markers, track } = collectAll();
 
@@ -290,8 +291,7 @@
   /* ---------- IMPORTERS ---------- */
   function parseKML(text) {
     const dom = new DOMParser().parseFromString(text, 'application/xml');
-    const $ = (sel, root = dom) =>
-      Array.from(root.getElementsByTagName(sel));
+    const $ = (sel, root = dom) => Array.from(root.getElementsByTagName(sel));
     const gx = (sel, root = dom) =>
       Array.from(
         root.getElementsByTagNameNS(
@@ -308,55 +308,59 @@
         pm.getElementsByTagName('description')[0]?.textContent || '';
 
       const pt = pm.getElementsByTagName('Point')[0];
-      if (pt) {
+      if (pt && typeof addMarker === 'function') {
         const coordTxt =
           pt.getElementsByTagName('coordinates')[0]?.textContent?.trim() ||
           '';
         const [lng, lat] = coordTxt.split(/[\s,]+/).map(Number);
-        if (isFinite(lat) && isFinite(lng) && typeof window.addMarker === 'function') {
-          window.addMarker([lat, lng], 'stand', name, undefined, desc);
+        if (isFinite(lat) && isFinite(lng)) {
+          addMarker([lat, lng], 'stand', name, undefined, desc);
         }
         return;
       }
 
       // LineString -> polyline
       const ls = pm.getElementsByTagName('LineString')[0];
-      if (ls && window.L && window.drawnItems) {
+      if (ls && typeof L !== 'undefined' && typeof drawnItems !== 'undefined') {
         const coordTxt =
           ls.getElementsByTagName('coordinates')[0]?.textContent || '';
         const pairs = coordTxt
           .trim()
           .split(/\s+/)
           .map(s => s.split(',').map(Number));
-        const latlngs = pairs.map(p => window.L.latLng(p[1], p[0]));
-        const layer = window.L.polyline(latlngs, { color: '#6dbc5d' });
+        const latlngs = pairs.map(p => L.latLng(p[1], p[0]));
+        const layer = L.polyline(latlngs, { color: '#6dbc5d' });
         layer._bhhName = name;
-        window.drawnItems.addLayer(layer);
+        drawnItems.addLayer(layer);
         return;
       }
 
       // Polygon -> polygon
       const poly = pm.getElementsByTagName('Polygon')[0];
-      if (poly && window.L && window.drawnItems) {
+      if (poly && typeof L !== 'undefined' && typeof drawnItems !== 'undefined') {
         const ringTxt =
           poly.getElementsByTagName('coordinates')[0]?.textContent || '';
         const pairs = ringTxt
           .trim()
           .split(/\s+/)
           .map(s => s.split(',').map(Number));
-        const latlngs = pairs.map(p => window.L.latLng(p[1], p[0]));
-        const layer = window.L.polygon(latlngs, {
+        const latlngs = pairs.map(p => L.latLng(p[1], p[0]));
+        const layer = L.polygon(latlngs, {
           color: '#6dbc5d',
           fillOpacity: 0.15,
         });
         layer._bhhName = name;
-        window.drawnItems.addLayer(layer);
+        drawnItems.addLayer(layer);
         return;
       }
 
       // gx:Track -> trackPoints
       const trackNode = gx('Track', pm)[0];
-      if (trackNode && window.L && window.trackLayer) {
+      if (
+        trackNode &&
+        typeof L !== 'undefined' &&
+        typeof trackLayer !== 'undefined'
+      ) {
         const whens = Array.from(
           trackNode.getElementsByTagName('when')
         ).map(n => new Date(n.textContent).getTime());
@@ -375,23 +379,25 @@
         }
 
         if (pts.length) {
-          window.trackPoints = pts;
-          window.trackLayer.setLatLngs(pts.map(p => [p.lat, p.lng]));
-          if (typeof window.saveTrack === 'function') {
-            window.saveTrack();
+          // trackPoints is global from main.js
+          if (typeof trackPoints !== 'undefined') {
+            trackPoints = pts;
+          }
+          trackLayer.setLatLngs(pts.map(p => [p.lat, p.lng]));
+          if (typeof saveTrack === 'function') {
+            saveTrack();
           }
         }
       }
     });
 
-    if (typeof window.saveDraw === 'function') window.saveDraw();
-    if (typeof window.saveMarkers === 'function') window.saveMarkers();
+    if (typeof saveDraw === 'function') saveDraw();
+    if (typeof saveMarkers === 'function') saveMarkers();
   }
 
   function parseGPX(text) {
     const dom = new DOMParser().parseFromString(text, 'application/xml');
-    const $ = (sel, root = dom) =>
-      Array.from(root.getElementsByTagName(sel));
+    const $ = (sel, root = dom) => Array.from(root.getElementsByTagName(sel));
 
     // wpt -> markers
     $('wpt').forEach(n => {
@@ -404,8 +410,8 @@
       const desc =
         n.getElementsByTagName('desc')[0]?.textContent || '';
 
-      if (typeof window.addMarker === 'function') {
-        window.addMarker([lat, lon], 'stand', name, undefined, desc);
+      if (typeof addMarker === 'function') {
+        addMarker([lat, lon], 'stand', name, undefined, desc);
       }
     });
 
@@ -420,7 +426,7 @@
       const name =
         r.getElementsByTagName('name')[0]?.textContent || 'Route';
 
-      if (!pts.length || !window.L || !window.drawnItems) return;
+      if (!pts.length || typeof L === 'undefined' || typeof drawnItems === 'undefined') return;
 
       const isClosed =
         pts.length > 2 &&
@@ -428,19 +434,19 @@
         Math.abs(pts[0][1] - pts[pts.length - 1][1]) < 1e-6;
 
       const layer = isClosed
-        ? window.L.polygon(pts, {
+        ? L.polygon(pts, {
             color: '#6dbc5d',
             fillOpacity: 0.15,
           })
-        : window.L.polyline(pts, { color: '#6dbc5d' });
+        : L.polyline(pts, { color: '#6dbc5d' });
 
       layer._bhhName = name;
-      window.drawnItems.addLayer(layer);
+      drawnItems.addLayer(layer);
     });
 
     // trk -> main track
     const trk = $('trk')[0];
-    if (trk && window.trackLayer) {
+    if (trk && typeof trackLayer !== 'undefined') {
       const pts = Array.from(trk.getElementsByTagName('trkpt'))
         .map(p => {
           const lat = parseFloat(p.getAttribute('lat'));
@@ -453,16 +459,18 @@
         .filter(p => isFinite(p.lat) && isFinite(p.lng));
 
       if (pts.length) {
-        window.trackPoints = pts;
-        window.trackLayer.setLatLngs(pts.map(p => [p.lat, p.lng]));
-        if (typeof window.saveTrack === 'function') {
-          window.saveTrack();
+        if (typeof trackPoints !== 'undefined') {
+          trackPoints = pts;
+        }
+        trackLayer.setLatLngs(pts.map(p => [p.lat, p.lng]));
+        if (typeof saveTrack === 'function') {
+          saveTrack();
         }
       }
     }
 
-    if (typeof window.saveDraw === 'function') window.saveDraw();
-    if (typeof window.saveMarkers === 'function') window.saveMarkers();
+    if (typeof saveDraw === 'function') saveDraw();
+    if (typeof saveMarkers === 'function') saveMarkers();
   }
 
   /* ---------- EXPORT ACTION ---------- */
@@ -540,22 +548,25 @@
                 JSON.stringify(obj.drawings)
               );
 
-              if (window.drawnItems && window.segmentLabelsGroup) {
-                window.drawnItems.clearLayers();
-                window.segmentLabelsGroup.clearLayers();
+              if (
+                typeof drawnItems !== 'undefined' &&
+                typeof segmentLabelsGroup !== 'undefined'
+              ) {
+                drawnItems.clearLayers();
+                segmentLabelsGroup.clearLayers();
               }
 
-              if (typeof window.restoreDraw === 'function') {
-                window.restoreDraw();
+              if (typeof restoreDraw === 'function') {
+                restoreDraw();
               }
             } else if (
               obj.type === 'FeatureCollection' ||
               obj.type === 'Feature'
             ) {
               // plain GeoJSON into drawings
-              if (window.L && window.drawnItems) {
-                window.L.geoJSON(obj, {
-                  onEachFeature: (_, l) => window.drawnItems.addLayer(l),
+              if (typeof L !== 'undefined' && typeof drawnItems !== 'undefined') {
+                L.geoJSON(obj, {
+                  onEachFeature: (_, l) => drawnItems.addLayer(l),
                 });
               }
               localStorage.setItem(
@@ -564,29 +575,29 @@
               );
             }
 
-            if (obj.markers && typeof window.deserializeMarkers === 'function') {
-              window.deserializeMarkers(obj.markers);
+            if (obj.markers && typeof deserializeMarkers === 'function') {
+              deserializeMarkers(obj.markers);
             }
 
             if (obj.track) {
               localStorage.setItem('bhh_track_v1', JSON.stringify(obj.track));
               try {
                 const raw = localStorage.getItem('bhh_track_v1');
-                if (raw && window.trackLayer) {
-                  window.trackPoints = JSON.parse(raw) || [];
-                  window.trackLayer.setLatLngs(
-                    window.trackPoints.map(p => [p.lat, p.lng])
+                if (raw && typeof trackLayer !== 'undefined') {
+                  trackPoints = JSON.parse(raw) || [];
+                  trackLayer.setLatLngs(
+                    trackPoints.map(p => [p.lat, p.lng])
                   );
                 }
               } catch {}
             }
           }
 
-          if (typeof window.refreshWaypointsUI === 'function') {
-            window.refreshWaypointsUI();
+          if (typeof refreshWaypointsUI === 'function') {
+            refreshWaypointsUI();
           }
-          if (typeof window.updateTrackStats === 'function') {
-            window.updateTrackStats();
+          if (typeof updateTrackStats === 'function') {
+            updateTrackStats();
           }
         } catch (e) {
           alert('Import failed: ' + e.message);
@@ -603,11 +614,12 @@
   if (btnDelete) {
     btnDelete.onclick = () => {
       // deleteMode is the shared global flag used by markers/waypoints
-      if (typeof window.deleteMode === 'undefined') {
+      if (typeof deleteMode === 'undefined') {
+        // should already exist from main.js, but just in case
         window.deleteMode = false;
       }
-      window.deleteMode = !window.deleteMode;
-      btnDelete.textContent = `Delete: ${window.deleteMode ? 'On' : 'Off'}`;
+      deleteMode = !deleteMode;
+      btnDelete.textContent = `Delete: ${deleteMode ? 'On' : 'Off'}`;
     };
   }
 })();
