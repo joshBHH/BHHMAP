@@ -658,11 +658,11 @@ function updateCompassDial(){
   if (!needle) return;
 
   const h = deviceHeading;
-  // 0° = arrow pointing up (North), 90° = East, etc.
-  const rotation = (h == null ? 0 : h);
 
-  // Rotate the needle container around its center
-  // (CSS keeps the base of the drawn triangle at the center of the compass)
+  // We add 180° because the drawn triangle is inverted relative to the heading.
+  // This flips it so the TIP of the triangle points toward the heading shown in text.
+  const rotation = (h == null ? 0 : (h + 180) % 360);
+
   needle.style.transform =
     'translate(-50%, -50%) rotate(' + rotation + 'deg)';
 }
@@ -808,6 +808,20 @@ map.on('moveend', () => {
 
 // Build initial target list once on load
 rebuildCompassTargets();
+// Hide compass UI on desktop / non-touch devices
+(function(){
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  if (!isTouch) {
+    // Hide the floating compass widget
+    const widget = document.getElementById('compassWidget');
+    if (widget) widget.style.display = 'none';
+
+    // Hide the Compass option inside Tools sheet
+    const toolRow = document.getElementById('toolCompass');
+    if (toolRow) toolRow.style.display = 'none';
+  }
+})();
+
 // [BHH: COMPASS END]
 
 
