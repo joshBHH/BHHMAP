@@ -635,7 +635,7 @@ function updateCompassDial(){
   if(!needle) return;
   const h = deviceHeading;
   const rotation = (h == null ? 0 : h); // degrees, 0 = north
-  needle.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
+  needle.style.transform = `translate(-50%, 0%) rotate(${rotation}deg)`;
 }
 function setGuideTarget(id){ guideTargetId = id || ''; localStorage.setItem('guide_target', guideTargetId); rebuildCompassTargets(); updateGuideLine(); }
 compTargetSel.addEventListener('change', ()=> setGuideTarget(compTargetSel.value));
