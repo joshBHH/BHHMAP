@@ -597,96 +597,99 @@ map.on('moveend', ()=>{ const anch = localStorage.getItem('cone_a')||'gps'; if(a
 refreshWind(); setInterval(refreshWind, 15*60*1000);
 // [BHH: WIND & SCENT END]
 
-
-/*******************
- * COMPASS + BEARING
- *******************/
 /*******************
  * COMPASS + BEARING
  *******************/
 // [BHH: COMPASS START]
-const compEnable = document.getElementById('compEnable');
-const compHeadingText = document.getElementById('compHeadingText');
-const compTargetSel = document.getElementById('compTarget');
+const compEnableBtn    = document.getElementById('compEnable');
+const compHeadingText  = document.getElementById('compHeadingText');
+const compTargetSel    = document.getElementById('compTarget');
 const compAnchorRadios = Array.from(document.querySelectorAll('input[name="compAnchor"]'));
-const compDist = document.getElementById('compDist');
-const compBear = document.getElementById('compBear');
+const compDist         = document.getElementById('compDist');
+const compBear         = document.getElementById('compBear');
+const compassWidget    = document.getElementById('compassWidget');
+const toolCompassRow   = document.getElementById('toolCompass');
 
-let compassWatchId = null;
 let deviceHeading = null;
 let guideTargetId = localStorage.getItem('guide_target') || '';
+const guideLine   = L.polyline([], { color:'#fdae6b', weight:3, dashArray:'6,6' }).addTo(map);
 
-const guideLine = L.polyline([], {
-  color: '#fdae6b',
-  weight: 3,
-  dashArray: '6,6'
-}).addTo(map);
+function toRad2(x){ return x * Math.PI / 180; }
+function toDeg2(x){ return x * 180 / Math.PI; }
 
-function toRad2(x) { return x * Math.PI / 180; }
-function toDeg2(x) { return x * 180 / Math.PI; }
-
-function bearingDeg(a, b) {
+function bearingDeg(a, b){
   const y = Math.sin(toRad2(b.lng - a.lng)) * Math.cos(toRad2(b.lat));
   const x =
     Math.cos(toRad2(a.lat)) * Math.sin(toRad2(b.lat)) -
     Math.sin(toRad2(a.lat)) * Math.cos(toRad2(b.lat)) *
     Math.cos(toRad2(b.lng - a.lng));
-
   return (toDeg2(Math.atan2(y, x)) + 360) % 360;
 }
 
-function rebuildCompassTargets() {
-  const wps = (function () {
-    const arr = [];
-    markersLayer.eachLayer(m => {
-      const { lat, lng } = m.getLatLng();
-      arr.push({
-        id: m.options.id,
-        name: m.options.name || 'Unnamed',
-        type: m.options.type || 'marker',
-        lat,
-        lng,
-        layer: m
-      });
+function updateCompassDial(){
+  const needle = document.getElementById('compassNeedle');
+  if (!needle) return;
+
+  const h = deviceHeading;
+  const rotation = (h == null ? 0 : h); // 0 = north
+  // Base of triangle stays at the exact center of the ring
+  needle.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+}
+
+function updateCompassReadout(){
+  if (!compHeadingText) return;
+  const h = deviceHeading;
+
+  if (h == null) {
+    compHeadingText.textContent = 'Heading: --';
+  } else {
+    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    const card = dirs[Math.round(h / 45) % 8];
+    compHeadingText.textContent = `Heading: ${Math.round(h)}° ${card}`;
+  }
+  updateGuideLine();
+}
+
+function rebuildCompassTargets(){
+  if (!compTargetSel) return;
+
+  const wps = [];
+  markersLayer.eachLayer(m => {
+    const { lat, lng } = m.getLatLng();
+    wps.push({
+      id:   m.options.id,
+      name: m.options.name || 'Unnamed',
+      type: m.options.type || 'marker',
+      lat,
+      lng,
+      layer: m
     });
-    return arr;
-  })();
+  });
 
-  const opts = ['<option value="">(none)</option>']
-    .concat(
-      wps.map(w =>
-        `<option value="${w.id}">${w.name} — ${w.type}</option>`
-      )
-    );
+  const optsHtml = ['<option value="">(none)</option>']
+    .concat(wps.map(w =>
+      `<option value="${w.id}">${w.name} — ${w.type}</option>`
+    ));
 
-  compTargetSel.innerHTML = opts.join('');
+  compTargetSel.innerHTML = optsHtml.join('');
 
   if (guideTargetId) {
     compTargetSel.value = guideTargetId;
   }
 }
 
-function updateCompassDial() {
-  const needle = document.getElementById('compassNeedle');
-  if (!needle) return;
-
-  const h = deviceHeading;
-  const rotation = (h == null ? 0 : h); // degrees, 0 = north
-
-  // Base of triangle in the center; tip sweeps the ring
-  needle.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
-}
-
-function setGuideTarget(id) {
+function setGuideTarget(id){
   guideTargetId = id || '';
   localStorage.setItem('guide_target', guideTargetId);
   rebuildCompassTargets();
   updateGuideLine();
 }
 
-compTargetSel.addEventListener('change', () => setGuideTarget(compTargetSel.value));
+if (compTargetSel) {
+  compTargetSel.addEventListener('change', () => setGuideTarget(compTargetSel.value));
+}
 
-function compOrigin() {
+function compOrigin(){
   const mode = (compAnchorRadios.find(r => r.checked) || {}).value || 'gps';
   if (mode === 'gps' && lastGPS) {
     return L.latLng(lastGPS.lat, lastGPS.lng);
@@ -694,13 +697,13 @@ function compOrigin() {
   return map.getCenter();
 }
 
-function updateGuideLine() {
+function updateGuideLine(){
   const origin = compOrigin();
 
   if (!guideTargetId) {
     guideLine.setLatLngs([]);
-    compDist.textContent = '--';
-    compBear.textContent = '--';
+    if (compDist) compDist.textContent = '--';
+    if (compBear) compBear.textContent = '--';
     return;
   }
 
@@ -711,8 +714,8 @@ function updateGuideLine() {
 
   if (!targetMarker) {
     guideLine.setLatLngs([]);
-    compDist.textContent = '--';
-    compBear.textContent = '--';
+    if (compDist) compDist.textContent = '--';
+    if (compBear) compBear.textContent = '--';
     return;
   }
 
@@ -720,101 +723,104 @@ function updateGuideLine() {
   guideLine.setLatLngs([origin, target]);
 
   const d = map.distance(origin, target);
-  compDist.textContent =
-    (d >= 1609.344)
-      ? (d / 1609.344).toFixed(2) + ' mi'
-      : Math.round(d * 3.28084) + ' ft';
+  if (compDist) {
+    compDist.textContent =
+      (d >= 1609.344)
+        ? (d / 1609.344).toFixed(2) + ' mi'
+        : Math.round(d * 3.28084) + ' ft';
+  }
 
   const brg = bearingDeg(origin, target);
-  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
   const card = dirs[Math.round(brg / 45) % 8];
-  compBear.textContent = `${Math.round(brg)}° ${card}`;
-}
-
-function updateCompassReadout() {
-  const h = deviceHeading;
-
-  if (h == null) {
-    compHeadingText.textContent = 'Heading: --';
-  } else {
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const card = dirs[Math.round(h / 45) % 8];
-    compHeadingText.textContent = `Heading: ${Math.round(h)}° ${card}`;
-  }
-
-  updateCompassDial();
-  updateGuideLine();
-}
-
-function onDeviceOrientation(e) {
-  let hdg = null;
-
-  // iOS (webkitCompassHeading)
-  if (typeof e.webkitCompassHeading === 'number') {
-    hdg = e.webkitCompassHeading;
-  } else if (typeof e.alpha === 'number') {
-    // Generic: convert alpha (0–360) into compass heading
-    hdg = (360 - e.alpha) % 360;
-  }
-
-  if (hdg != null) {
-    deviceHeading = hdg;
-    updateCompassReadout();
+  if (compBear) {
+    compBear.textContent = `${Math.round(brg)}° ${card}`;
   }
 }
 
-async function enableCompass() {
-  try {
-    // iOS permissions
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-      const resp = await DeviceOrientationEvent.requestPermission();
-      if (resp !== 'granted') {
-        compHeadingText.textContent = 'Heading: permission denied';
-        return;
-      }
-    }
-
-    window.addEventListener('deviceorientation', onDeviceOrientation, true);
-  } catch (e) {
-    // Non-iOS or failure; still try to listen if supported
-    try {
-      window.addEventListener('deviceorientation', onDeviceOrientation, true);
-    } catch (_) {
-      compHeadingText.textContent = 'Heading: not supported';
-      return;
-    }
-  }
-
-  // Keep GPS fresh for guide-to-target
-  try {
-    if (!compassWatchId && navigator.geolocation) {
-      compassWatchId = navigator.geolocation.watchPosition(
-        pos => {
-          lastGPS = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          };
-          updateGuideLine();
-        },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 4000 }
-      );
-    }
-  } catch (_) {
-    // ignore
-  }
-}
-
-// Button is now just a secondary way to re-enable/refresh
-if (compEnable) {
-  compEnable.onclick = () => enableCompass();
-}
-
-// React to anchor changes (GPS vs center)
 compAnchorRadios.forEach(r =>
   r.addEventListener('change', () => updateGuideLine())
 );
+
+map.on('moveend', () => {
+  const mode = (compAnchorRadios.find(r => r.checked) || {}).value || 'gps';
+  if (mode === 'center') updateGuideLine();
+});
+
+// Device orientation → heading
+function onDeviceOrientation(e){
+  let hdg = null;
+
+  // iOS Safari
+  if (typeof e.webkitCompassHeading === 'number') {
+    hdg = e.webkitCompassHeading;
+  } else if (typeof e.alpha === 'number') {
+    // Generic browsers
+    hdg = (360 - e.alpha) % 360;
+  }
+
+  if (hdg == null || isNaN(hdg)) return;
+  deviceHeading = hdg;
+  updateCompassReadout();
+}
+
+// Set up compass: mobile vs desktop behavior
+function enableCompassInternal(){
+  if (!IS_MOBILE) return;
+
+  if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
+  } else if ('ondeviceorientation' in window) {
+    window.addEventListener('deviceorientation', onDeviceOrientation, true);
+  } else if (compHeadingText) {
+    compHeadingText.textContent = 'Heading: not supported';
+  }
+
+  // Keep GPS updated so bearing-to-target uses live position
+  try {
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(pos => {
+        lastGPS = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        };
+        updateGuideLine();
+      }, () => {}, { enableHighAccuracy:true, maximumAge:4000 });
+    }
+  } catch (_) {}
+}
+
+// Desktop: hide compass UI completely
+if (!IS_MOBILE) {
+  if (compassWidget) compassWidget.style.display = 'none';
+  if (toolCompassRow) toolCompassRow.style.display = 'none';
+} else {
+  // Mobile: auto-enable where allowed, fallback to button on iOS
+  const needsTapPermission =
+    typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof DeviceOrientationEvent.requestPermission === 'function';
+
+  if (!needsTapPermission) {
+    // Android / older browsers: just enable it
+    enableCompassInternal();
+  } else if (compEnableBtn) {
+    // iOS: user must tap a button once to grant permission
+    compEnableBtn.addEventListener('click', async () => {
+      try {
+        const resp = await DeviceOrientationEvent.requestPermission();
+        if (resp === 'granted') {
+          enableCompassInternal();
+        } else if (compHeadingText) {
+          compHeadingText.textContent = 'Heading: permission denied';
+        }
+      } catch (_) {
+        if (compHeadingText) {
+          compHeadingText.textContent = 'Heading: not supported';
+        }
+      }
+    });
+  }
+}
 
 // [BHH: COMPASS END]
 
