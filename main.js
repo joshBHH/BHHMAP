@@ -661,12 +661,11 @@ function updateCompassDial(){
   // 0° = arrow pointing up (North), 90° = East, etc.
   const rotation = (h == null ? 0 : h);
 
-  // IMPORTANT: match your CSS initial transform:
-  // left:50%, top:50%, translate(-50%, -50%) so the BASE stays in the center
+  // Rotate the needle container around its center
+  // (CSS keeps the base of the drawn triangle at the center of the compass)
   needle.style.transform =
     'translate(-50%, -50%) rotate(' + rotation + 'deg)';
 }
-
 
 function setGuideTarget(id){
   guideTargetId = id || '';
@@ -745,9 +744,12 @@ function onDeviceOrientation(e){
 
   // iOS Safari
   if (typeof e.webkitCompassHeading === 'number') {
+    // 0 = North, increases clockwise
     hdg = e.webkitCompassHeading;
   } else if (typeof e.alpha === 'number') {
-    // generic: convert alpha to compass heading
+    // Generic: convert alpha (0–360) to compass heading
+    // "alpha" is clockwise from device's initial orientation;
+    // this common conversion makes 0 ≈ North.
     hdg = (360 - e.alpha) % 360;
   }
 
@@ -787,7 +789,7 @@ async function startCompass(){
   }
 }
 
-// Auto-start compass on touch / coarse-pointer devices
+// Auto-start compass on touch / coarse-pointer devices (mobile)
 if (window.matchMedia('(pointer: coarse)').matches) {
   startCompass();
 }
@@ -807,6 +809,7 @@ map.on('moveend', () => {
 // Build initial target list once on load
 rebuildCompassTargets();
 // [BHH: COMPASS END]
+
 
 
 /*******************
