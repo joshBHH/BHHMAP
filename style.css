@@ -372,34 +372,34 @@ body,
   }
 
   .main-menu {
-    gap: 10px;
-    justify-content: flex-start;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    justify-content: space-around;
+    flex-wrap: wrap;              /* allow multiple rows instead of side-scroll */
+    overflow-x: visible;          /* no horizontal scrolling */
     padding: 10px 12px calc(12px + var(--safe-bottom));
   }
 
   .main-menu::-webkit-scrollbar {
-    height: 6px;
+    height: 0;                    /* hide scrollbar if any */
   }
 
   .main-menu button {
-    flex: 0 0 auto;
-    min-width: 132px;
-    max-width: none;
-    font-size: 14px;
-    padding: 10px 12px;
+    flex: 1 1 calc(33.33% - 8px); /* ~3 buttons per row on small screens */
+    min-width: 0;                 /* let them shrink a bit */
+    max-width: 140px;
+    font-size: 13px;              /* slightly smaller so they fit better */
+    padding: 8px 8px;             /* not bigger than before */
   }
 
   .wind-btn {
-    min-width: 200px;
+    min-width: 0;                 /* no forced extra width */
   }
 
   #windText {
-    font-size: 12.5px;
+    font-size: 10.0px;
   }
 }
+
 
 @supports (height: 100svh) {
   #map {
