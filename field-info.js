@@ -140,10 +140,7 @@
     makeDraggable(stateBadge, 'stateBadge', 'ui_state_badge_pos');
   }
 
-  const compassWidget = document.getElementById('compassWidget');
-if (compassWidget && typeof makeDraggable === 'function') {
-  makeDraggable(compassWidget, 'compassWidgetHandle', 'ui_compass_pos');
-}
+ 
 
 
   // Expose a small API for other scripts
