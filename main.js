@@ -602,14 +602,7 @@ let compassWatchId = null;
 let deviceHeading = null;
 let guideTargetId = localStorage.getItem('guide_target') || '';
 const guideLine = L.polyline([], { color:'#fdae6b', weight:3, dashArray:'6,6' }).addTo(map);
-const headingMarker = L.marker([0,0], { interactive:false, icon: L.divIcon({className:'', html:`<div style="width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:18px solid #fef08a; transform:rotate(0deg); filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))"></div>`}) });
 
-function setHeadingMarker(latlng, heading){
-  headingMarker.setLatLng(latlng);
-  const el = headingMarker.getElement();
-  if(el){ el.firstChild.style.transform = `rotate(${heading}deg)`; }
-  if(!map.hasLayer(headingMarker)) headingMarker.addTo(map);
-}
 function toRad2(x){ return x*Math.PI/180; }
 function toDeg2(x){ return x*180/Math.PI; }
 function bearingDeg(a, b){
@@ -625,6 +618,13 @@ function rebuildCompassTargets(){
   const opts = ['<option value="">(none)</option>'].concat(wps.map(w=> `<option value="${w.id}">${w.name} — ${w.type}</option>`));
   compTargetSel.innerHTML = opts.join('');
   if(guideTargetId){ compTargetSel.value = guideTargetId; }
+}
+function updateCompassDial(){
+  const needle = document.getElementById('compassNeedle');
+  if(!needle) return;
+  const h = deviceHeading;
+  const rotation = (h == null ? 0 : h); // degrees, 0 = north
+  needle.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
 }
 function setGuideTarget(id){ guideTargetId = id || ''; localStorage.setItem('guide_target', guideTargetId); rebuildCompassTargets(); updateGuideLine(); }
 compTargetSel.addEventListener('change', ()=> setGuideTarget(compTargetSel.value));
@@ -669,7 +669,6 @@ async function enableCompass(){
     if(!compassWatchId && navigator.geolocation){
       compassWatchId = navigator.geolocation.watchPosition(pos=>{
         lastGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setHeadingMarker(lastGPS, deviceHeading||0);
         updateGuideLine();
       }, ()=>{}, {enableHighAccuracy:true, maximumAge:4000});
     }
