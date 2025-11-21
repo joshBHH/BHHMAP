@@ -460,20 +460,21 @@ body,
 .compass-label.e { right: 4px; top: 50%; transform: translateY(-50%); }
 .compass-label.w { left: 4px;  top: 50%; transform: translateY(-50%); }
 
+/* Needle */
 .compass-needle{
   position:absolute;
-  top:50%;
   left:50%;
+  top:50%;              /* base starts in the center of the ring */
   width:0;
   height:0;
   border-left:5px solid transparent;
   border-right:5px solid transparent;
-  border-bottom:26px solid #f97316; /* orange triangle */
-  /* pivot = base of the triangle */
-  transform-origin:50% 100%;
-  /* JS will set transform, so no default translate/rotate here */
+  border-bottom:26px solid #f97316; /* orange-ish */
+  transform-origin:50% 100%;        /* pivot at the base */
+  transform:translate(-50%, 0) rotate(0deg);
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.8));
 }
+
 
 
 /* [BHH: STYLES END] */
