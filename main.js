@@ -508,6 +508,7 @@ const btnWind = document.getElementById('menuWind');
 const windText = document.getElementById('windText');
 const windArrow = document.getElementById('windArrow');
 
+
 let currentWind = { fromDeg: null, speed: 0 };
 let lastGPS = null;
 
@@ -897,6 +898,15 @@ const almOpenScore     = document.getElementById('almOpenScore');
 const almOpenMoon      = document.getElementById('almOpenMoon');
 const almFieldInfo     = document.getElementById('almanacFieldInfo');
 const almClose         = document.getElementById('almanacClose');
+
+// Shop Gear button (bottom menu)
+const btnShop = document.getElementById('menuShop');
+if (btnShop) {
+  btnShop.addEventListener('click', () => {
+    window.open('https://www.buckeyehunterhub.com/shop', '_blank');
+  });
+}
+
 
 btnAlmanac.onclick = () => {
   almFieldInfo.checked = (localStorage.getItem('ui_info_visible') === '1');
