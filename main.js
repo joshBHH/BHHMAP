@@ -716,100 +716,93 @@ function updateGuideLine(){
 }
 
 function updateCompassReadout(){
-  const h = deviceHeading;
-  if (h == null) {
-    compHeadingText.textContent = 'Heading: --';
-  } else {
-    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
-    const card = dirs[Math.round(h / 45) % 8];
-    compHeadingText.textContent = `Heading: ${Math.round(h)}° ${card}`;
-  }
-  updateGuideLine();
-}
+// [BHH: COMPASS START]
+const compEnable = document.getElementById('compEnable');
+const compHeadingText = document.getElementById('compHeadingText');
+const compTargetSel = document.getElementById('compTarget');
+const compAnchorRadios = Array.from(document.querySelectorAll('input[name="compAnchor"]'));
+const compDist = document.getElementById('compDist');
+const compBear = document.getElementById('compBear');
 
+let compassWatchId = null;
+let deviceHeading = null;
+let guideTargetId = localStorage.getItem('guide_target') || '';
+const guideLine = L.polyline([], { color:'#fdae6b', weight:3, dashArray:'6,6' }).addTo(map);
+
+function toRad2(x){ return xMath.PI/180; }
+function toDeg2(x){ return x180/Math.PI; }
+function bearingDeg(a, b){
+const y = Math.sin(toRad2(b.lng - a.lng)) * Math.cos(toRad2(b.lat));
+const x = Math.cos(toRad2(a.lat))*Math.sin(toRad2(b.lat)) - Math.sin(toRad2(a.lat))*Math.cos(toRad2(b.lat))Math.cos(toRad2(b.lng-a.lng));
+return (toDeg2(Math.atan2(y, x)) + 360) % 360;
+}
+function rebuildCompassTargets(){
+const wps = (function(){
+const arr=[]; markersLayer.eachLayer(m=>{ const {lat,lng}=m.getLatLng(); arr.push({ id:m.options.id, name:m.options.name||'Unnamed', type:m.options.type||'marker', lat, lng, layer:m }); });
+return arr;
+})();
+const opts = ['<option value="">(none)</option>'].concat(wps.map(w=> <option value="${w.id}">${w.name} — ${w.type}</option>));
+compTargetSel.innerHTML = opts.join('');
+if(guideTargetId){ compTargetSel.value = guideTargetId; }
+}
+function updateCompassDial(){
+const needle = document.getElementById('compassNeedle');
+if(!needle) return;
+const h = deviceHeading;
+const rotation = (h == null ? 0 : h); // degrees, 0 = north
+needle.style.transform = translate(-50%, -100%) rotate(${rotation}deg);
+}
+function setGuideTarget(id){ guideTargetId = id || ''; localStorage.setItem('guide_target', guideTargetId); rebuildCompassTargets(); updateGuideLine(); }
+compTargetSel.addEventListener('change', ()=> setGuideTarget(compTargetSel.value));
+function compOrigin(){
+const mode = (compAnchorRadios.find(r=>r.checked)||{}).value || 'gps';
+if(mode==='gps' && lastGPS){ return L.latLng(lastGPS.lat, lastGPS.lng); }
+return map.getCenter();
+}
+function updateGuideLine(){
+const origin = compOrigin();
+if(!guideTargetId){ guideLine.setLatLngs([]); compDist.textContent='--'; compBear.textContent='--'; return; }
+let targetMarker = null; markersLayer.eachLayer(m=>{ if(m.options.id===guideTargetId) targetMarker = m; });
+if(!targetMarker){ guideLine.setLatLngs([]); compDist.textContent='--'; compBear.textContent='--'; return; }
+const target = targetMarker.getLatLng();
+guideLine.setLatLngs([origin, target]);
+const d = map.distance(origin, target);
+compDist.textContent = (d>=1609.344) ? (d/1609.344).toFixed(2)+' mi' : Math.round(d3.28084)+' ft';
+const brg = bearingDeg(origin, target);
+const dirs = ['N','NE','E','SE','S','SW','W','NW']; const card = dirs[Math.round(brg/45)%8];
+compBear.textContent = ${Math.round(brg)}° ${card};
+}
+function updateCompassReadout(){
+const h = deviceHeading;
+if(h==null){ compHeadingText.textContent = 'Heading: --'; }
+else { const dirs = ['N','NE','E','SE','S','SW','W','NW']; const card = dirs[Math.round(h/45)%8]; compHeadingText.textContent = Heading: ${Math.round(h)}° ${card}; }
+updateGuideLine();
+}
 function onDeviceOrientation(e){
-  let hdg = null;
-
-  if (typeof e.webkitCompassHeading === 'number') {
-    // iOS
-    hdg = e.webkitCompassHeading;
-  } else if (typeof e.alpha === 'number') {
-    // Other browsers: convert alpha to compass heading
-    hdg = (360 - e.alpha) % 360;
-  }
-
-  if (hdg != null) {
-    deviceHeading = hdg;
-    updateCompassReadout();
-    updateCompassDial();
-  }
+let hdg = null;
+if(typeof e.webkitCompassHeading === 'number'){ hdg = e.webkitCompassHeading; }
+else if(typeof e.alpha === 'number'){ hdg = (360 - e.alpha) % 360; }
+if(hdg!=null){ deviceHeading = hdg; updateCompassReadout(); }
 }
-
-/**
- * enableCompass(auto = false)
- *  auto = true  → called on load, no permission alert on failure
- *  auto = false → called from button, shows alert if permission denied
- */
-async function enableCompass(auto = false){
-  try {
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-
-      // iOS: only ask permission on a user gesture, not on auto-init
-      if (!auto) {
-        const resp = await DeviceOrientationEvent.requestPermission();
-        if (resp !== 'granted') throw new Error('Permission denied');
-      }
-      // If auto = true, we just attach listener; if iOS blocks it,
-      // we fail silently and user can tap the button as a backup.
-    }
-
-    window.addEventListener('deviceorientation', onDeviceOrientation, true);
-  } catch (e) {
-    if (!auto) {
-      alert('Compass permission denied or unsupported. You can still use the bearing line.');
-    }
-  }
-
-  // GPS watch for guiding & bearing; OK to always try
-  try {
-    if (!compassWatchId && navigator.geolocation) {
-      compassWatchId = navigator.geolocation.watchPosition(
-        pos => {
-          lastGPS = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          };
-          updateGuideLine();
-        },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 4000 }
-      );
-    }
-  } catch (_) {}
+async function enableCompass(){
+try{
+if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+const resp = await DeviceOrientationEvent.requestPermission(); if(resp !== 'granted') throw new Error('Permission denied');
 }
-
-// Button is now just a backup / retry (you don't have to use it)
-if (compEnable) {
-  compEnable.onclick = () => enableCompass(false);
+window.addEventListener('deviceorientation', onDeviceOrientation, true);
+}catch(e){ alert('Compass permission denied or unsupported. You can still use the bearing line.'); }
+try{
+if(!compassWatchId && navigator.geolocation){
+compassWatchId = navigator.geolocation.watchPosition(pos=>{
+lastGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+updateGuideLine();
+}, ()=>{}, {enableHighAccuracy:true, maximumAge:4000});
 }
-
-// React to anchor changes & map movement
-compAnchorRadios.forEach(r =>
-  r.addEventListener('change', () => updateGuideLine())
-);
-
-map.on('moveend', () => {
-  const mode = (compAnchorRadios.find(r=>r.checked) || {}).value || 'gps';
-  if (mode === 'center') updateGuideLine();
-});
-
-// Auto-enable compass as soon as the script runs
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => enableCompass(true));
-} else {
-  enableCompass(true);
+}catch(_){}
 }
+compEnable.onclick = ()=> enableCompass();
+compAnchorRadios.forEach(r=> r.addEventListener('change', ()=> updateGuideLine()));
+map.on('moveend', ()=>{ const mode = (compAnchorRadios.find(r=>r.checked)||{}).value || 'gps'; if(mode==='center') updateGuideLine(); });
 // [BHH: COMPASS END]
 
 /*******************
