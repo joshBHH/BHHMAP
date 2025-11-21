@@ -3,6 +3,8 @@
 // - Export (JSON, KML, GPX)
 // - Import (JSON/GeoJSON, KML, GPX)
 // - Delete Mode toggle button
+//
+// Now enriched so KML/GPX carry BHH metadata (type + notes + photo).
 
 (() => {
   const btnExport = document.getElementById('btnExport');
@@ -86,7 +88,7 @@
     return pts;
   }
 
-  /** Build KML */
+  /** Build KML (with BHH metadata for markers) */
   function buildKML() {
     const { drawings, markers, track } = collectAll();
 
@@ -96,13 +98,24 @@
       `xmlns:gx="http://www.google.com/kml/ext/2.2">\n` +
       `<Document><name>BuckeyeHunterHub</name>\n`;
 
-    // Markers -> Placemark Points
+    // Markers -> Placemark Points (+ ExtendedData bhh_json)
     kml += `<Folder><name>Markers</name>\n`;
     markers.forEach(m => {
+      const meta = {
+        t: m.type || 'stand',       // type
+        n: m.notes || '',           // notes
+        p: m.photo || '',           // photo data URL
+      };
+      const metaStr = escapeXml(JSON.stringify(meta));
+
       kml +=
-        `<Placemark><name>${escapeXml(m.name)}</name>` +
+        `<Placemark>` +
+        `<name>${escapeXml(m.name)}</name>` +
         (m.notes ? `<description>${escapeXml(m.notes)}</description>` : '') +
         `<Point><coordinates>${m.lng},${m.lat},0</coordinates></Point>` +
+        `<ExtendedData>` +
+        `<Data name="bhh_json"><value>${metaStr}</value></Data>` +
+        `</ExtendedData>` +
         `</Placemark>\n`;
     });
     kml += `</Folder>\n`;
@@ -193,7 +206,7 @@
     return kml;
   }
 
-  /** Build GPX (markers->wpt, shapes->rte, track->trk) */
+  /** Build GPX (markers->wpt with bhh_meta, shapes->rte, track->trk) */
   function buildGPX() {
     const { drawings, markers, track } = collectAll();
 
@@ -202,12 +215,20 @@
       `<gpx version="1.1" creator="BuckeyeHunterHub" ` +
       `xmlns="http://www.topografix.com/GPX/1/1">\n`;
 
-    // Waypoints
+    // Waypoints (include BHH metadata in <extensions><bhh_meta>...</bhh_meta>)
     markers.forEach(m => {
+      const meta = {
+        t: m.type || 'stand',
+        n: m.notes || '',
+        p: m.photo || '',
+      };
+      const metaStr = escapeXml(JSON.stringify(meta));
+
       gpx +=
         `<wpt lat="${m.lat}" lon="${m.lng}">` +
         `<name>${escapeXml(m.name)}</name>` +
         (m.notes ? `<desc>${escapeXml(m.notes)}</desc>` : '') +
+        `<extensions><bhh_meta>${metaStr}</bhh_meta></extensions>` +
         `</wpt>\n`;
     });
 
@@ -300,12 +321,31 @@
         )
       );
 
-    // Points -> markers
+    // Points -> markers (+ BHH metadata)
     $('Placemark').forEach(pm => {
       const name =
         pm.getElementsByTagName('name')[0]?.textContent || 'Marker';
       const desc =
         pm.getElementsByTagName('description')[0]?.textContent || '';
+
+      // BHH ExtendedData metadata
+      let meta = null;
+      const ed = pm.getElementsByTagName('ExtendedData')[0];
+      if (ed) {
+        const datas = ed.getElementsByTagName('Data');
+        for (let i = 0; i < datas.length; i++) {
+          if (datas[i].getAttribute('name') === 'bhh_json') {
+            const v = datas[i].getElementsByTagName('value')[0];
+            if (v && v.textContent) {
+              try {
+                meta = JSON.parse(v.textContent);
+              } catch (e) {
+                console.warn('Failed to parse bhh_json', e);
+              }
+            }
+          }
+        }
+      }
 
       const pt = pm.getElementsByTagName('Point')[0];
       if (pt && typeof addMarker === 'function') {
@@ -314,7 +354,10 @@
           '';
         const [lng, lat] = coordTxt.split(/[\s,]+/).map(Number);
         if (isFinite(lat) && isFinite(lng)) {
-          addMarker([lat, lng], 'stand', name, undefined, desc);
+          const mType = (meta && meta.t) || 'stand';
+          const mNotes = (meta && meta.n) || desc;
+          const mPhoto = (meta && meta.p) || '';
+          addMarker([lat, lng], mType, name, undefined, mNotes, mPhoto);
         }
         return;
       }
@@ -379,7 +422,6 @@
         }
 
         if (pts.length) {
-          // trackPoints is global from main.js
           if (typeof trackPoints !== 'undefined') {
             trackPoints = pts;
           }
@@ -399,7 +441,7 @@
     const dom = new DOMParser().parseFromString(text, 'application/xml');
     const $ = (sel, root = dom) => Array.from(root.getElementsByTagName(sel));
 
-    // wpt -> markers
+    // wpt -> markers (+ BHH metadata)
     $('wpt').forEach(n => {
       const lat = parseFloat(n.getAttribute('lat'));
       const lon = parseFloat(n.getAttribute('lon'));
@@ -410,8 +452,25 @@
       const desc =
         n.getElementsByTagName('desc')[0]?.textContent || '';
 
+      let meta = null;
+      const exts = n.getElementsByTagName('extensions')[0];
+      if (exts) {
+        const bhh = exts.getElementsByTagName('bhh_meta')[0];
+        if (bhh && bhh.textContent) {
+          try {
+            meta = JSON.parse(bhh.textContent);
+          } catch (e) {
+            console.warn('Failed to parse bhh_meta', e);
+          }
+        }
+      }
+
+      const mType = (meta && meta.t) || 'stand';
+      const mNotes = (meta && meta.n) || desc;
+      const mPhoto = (meta && meta.p) || '';
+
       if (typeof addMarker === 'function') {
-        addMarker([lat, lon], 'stand', name, undefined, desc);
+        addMarker([lat, lon], mType, name, undefined, mNotes, mPhoto);
       }
     });
 
