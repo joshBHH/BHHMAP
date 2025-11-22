@@ -606,20 +606,16 @@ const compTargetSel     = document.getElementById('compTarget');
 const compAnchorRadios  = Array.from(document.querySelectorAll('input[name="compAnchor"]'));
 const compDist          = document.getElementById('compDist');
 const compBear          = document.getElementById('compBear');
-const compEnableBtn     = document.getElementById('compEnable');
+const compEnableBtn     = document.getElementById('compEnable'); // backup button in the sheet
 
 let deviceHeading = null;
 let guideTargetId = localStorage.getItem('guide_target') || '';
-const guideLine   = L.polyline([], {
-  color: '#fdae6b',
-  weight: 3,
-  dashArray: '6,6'
-}).addTo(map);
+const guideLine   = L.polyline([], { color:'#fdae6b', weight:3, dashArray:'6,6' }).addTo(map);
+let compassStarted = false;
 
 function toRad2(x){ return x * Math.PI / 180; }
 function toDeg2(x){ return x * 180 / Math.PI; }
 
-// Bearing from A->B in degrees (0° = N, clockwise)
 function bearingDeg(a, b){
   const y =
     Math.sin(toRad2(b.lng - a.lng)) *
@@ -633,7 +629,7 @@ function bearingDeg(a, b){
   return (toDeg2(Math.atan2(y, x)) + 360) % 360;
 }
 
-// Build dropdown of waypoints as compass targets
+// --- Waypoint targets for "Guide" line ---
 function rebuildCompassTargets(){
   const wps = [];
   markersLayer.eachLayer(m => {
@@ -659,18 +655,6 @@ function rebuildCompassTargets(){
   if (guideTargetId) compTargetSel.value = guideTargetId;
 }
 
-function updateCompassDial(){
-  const needle = document.getElementById('compassNeedle');
-  if (!needle) return;
-
-  const h = deviceHeading == null ? 0 : deviceHeading;
-  const rotation = ((h % 360) + 360) % 360; // normalize
-
-  // MUST match CSS initial transform: translate(-50%, -100%) rotate(0deg)
-  needle.style.transform =
-    `translate(-50%, -100%) rotate(${rotation}deg)`;
-}
-
 function setGuideTarget(id){
   guideTargetId = id || '';
   localStorage.setItem('guide_target', guideTargetId);
@@ -682,6 +666,7 @@ compTargetSel.addEventListener('change', () => {
   setGuideTarget(compTargetSel.value);
 });
 
+// --- Guide line origin and drawing ---
 function compOrigin(){
   const mode = (compAnchorRadios.find(r => r.checked) || {}).value || 'gps';
   if (mode === 'gps' && lastGPS) {
@@ -727,6 +712,19 @@ function updateGuideLine(){
   compBear.textContent = Math.round(brg) + '° ' + card;
 }
 
+// --- Dial / readout ---
+function updateCompassDial(){
+  const needle = document.getElementById('compassNeedle');
+  if (!needle) return;
+
+  const h = deviceHeading;
+  const rotation = (h == null ? 0 : h);  // 0° = tip straight up (N)
+
+  // Must match CSS initial transform
+  needle.style.transform =
+    'translate(-50%, -100%) rotate(' + rotation + 'deg)';
+}
+
 function updateCompassReadout(){
   const h = deviceHeading;
 
@@ -743,34 +741,51 @@ function updateCompassReadout(){
   updateCompassDial();
 }
 
-// Device orientation handler
-function onDeviceOrientation(e){
-  let hdg = null;
+// --- Normalize heading so we only adjust ONCE ---
+function normalizeHeading(raw){
+  if (raw == null || isNaN(raw)) return null;
 
-  // iOS Safari
-  if (typeof e.webkitCompassHeading === 'number') {
-    hdg = e.webkitCompassHeading;  // 0° = North, clockwise
-  } else if (typeof e.alpha === 'number') {
-    // Android: alpha 0–360; this form matches the heading text you liked
-    hdg = (360 - e.alpha) % 360;
+  // Put into [0, 360)
+  let h = ((raw % 360) + 360) % 360;
+
+  const ua        = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(ua);
+  const isChrome  = /Chrome/i.test(ua);
+
+  // On your Android/Chrome device the sensor appears 180° off.
+  // Apply that correction ONCE here so text and needle both match.
+  if (isAndroid && isChrome) {
+    h = (h + 180) % 360;
   }
 
-  if (hdg == null || isNaN(hdg)) return;
+  return h;
+}
 
-  deviceHeading = hdg;
+// --- Device orientation handler ---
+function onDeviceOrientation(e){
+  let raw = null;
+
+  if (typeof e.webkitCompassHeading === 'number') {
+    // iOS Safari: already 0–360 clockwise from North
+    raw = e.webkitCompassHeading;
+  } else if (typeof e.alpha === 'number') {
+    // Android/Chrome typically: alpha is 0–360 clockwise
+    raw = e.alpha;
+  }
+
+  const h = normalizeHeading(raw);
+  if (h == null) return;
+
+  deviceHeading = h;
   updateCompassReadout();
 }
 
-// Use mobile / coarse pointer detection
-const IS_TOUCH_DEVICE =
-  (typeof IS_MOBILE !== 'undefined' && IS_MOBILE) ||
-  ('ontouchstart' in window) ||
-  window.matchMedia('(pointer: coarse)').matches;
-
+// --- Start compass (auto on mobile, disabled on desktop via CSS) ---
 async function startCompass(){
-  if (!IS_TOUCH_DEVICE) return;  // don't run on desktop
+  if (compassStarted) return;
+  compassStarted = true;
 
-  // iOS 13+ permission prompt
+  // iOS permission gate
   try {
     if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -784,22 +799,31 @@ async function startCompass(){
     // Non-iOS browsers: ignore
   }
 
-  // Use plain deviceorientation only to avoid double / weird absolute flips
-  if ('ondeviceorientation' in window) {
-    window.addEventListener('deviceorientation', onDeviceOrientation, true);
+  let eventType = null;
+  if ('ondeviceorientationabsolute' in window) {
+    eventType = 'deviceorientationabsolute';
+  } else if ('ondeviceorientation' in window) {
+    eventType = 'deviceorientation';
   } else {
     compHeadingText.textContent = 'Heading: not supported';
     return;
   }
+
+  window.addEventListener(eventType, onDeviceOrientation, true);
+
+  // Keep origin updated via GPS (so guide line behaves)
+  if (navigator.geolocation && !gpsWatchId) {
+    ensureGPSWatch(false);
+  }
 }
 
-// Auto-start compass on touch devices
-if (IS_TOUCH_DEVICE) {
+// Auto-start compass on touch / coarse-pointer devices (phones, most tablets)
+if (window.matchMedia('(pointer: coarse)').matches) {
   startCompass();
 }
 
-// "Enable Compass" button as a backup (mobile only)
-if (compEnableBtn && IS_TOUCH_DEVICE) {
+// Backup: button in the Compass sheet can also trigger it
+if (compEnableBtn) {
   compEnableBtn.addEventListener('click', startCompass);
 }
 
