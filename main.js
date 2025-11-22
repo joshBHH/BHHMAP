@@ -45,7 +45,7 @@ function setBasemap(key){
  *******************/
 // [BHH: DRAW – STORAGE START]
 const drawnItems = new L.FeatureGroup().addTo(map);
-const segmentLabelsGroup = L.layerGroup().addTo(map); // used by distance/area labels
+const segmentLabelsGroup = L.layerGroup().addTo(map); // used by distance labels
 const STORAGE_DRAW = 'bhh_drawings_v6';
 
 // helper: detect shape type
@@ -105,209 +105,6 @@ function saveDraw(){
   localStorage.setItem(STORAGE_DRAW, JSON.stringify(bundle));
 }
 
-// distance formatting helper
-function fmtFeetMiles(m){
-  const ft = m * 3.28084;
-  if (m >= 1609.344) return (m / 1609.344).toFixed(2) + ' mi';
-  return Math.round(ft) + ' ft';
-}
-
-// --- Polyline label helpers ---
-function removeSegLabels(layer){
-  if (layer._segLabels){
-    layer._segLabels.forEach(lbl => segmentLabelsGroup.removeLayer(lbl));
-    layer._segLabels = null;
-  }
-}
-
-function removeTotalLabel(layer){
-  if (layer._totalLabel){
-    segmentLabelsGroup.removeLayer(layer._totalLabel);
-    layer._totalLabel = null;
-  }
-}
-
-// We now only use a single "Total" label per line
-function polylineTotalDistance(layer){
-  const latlngs = layer.getLatLngs();
-  const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
-  let d = 0;
-  for (let i = 1; i < pts.length; i++){
-    d += map.distance(pts[i-1], pts[i]);
-  }
-  return d;
-}
-
-// --- Area label helpers (polygon / rect / circle) ---
-function removeAreaLabel(layer){
-  if (layer._areaLabel){
-    segmentLabelsGroup.removeLayer(layer._areaLabel);
-    layer._areaLabel = null;
-  }
-}
-
-function polygonAreaAcres(layer){
-  if (typeof turf === 'undefined') return null;
-  try {
-    const gj = layer.toGeoJSON();
-    const sqMeters = turf.area(gj);
-    const acres = sqMeters * 0.000247105; // m² → acres
-    return acres;
-  } catch(e){
-    return null;
-  }
-}
-
-function circleAreaAcres(layer){
-  const r = layer.getRadius(); // meters
-  const sqMeters = Math.PI * r * r;
-  return sqMeters * 0.000247105;
-}
-
-// Single text summary for a shape (used by labels & popup)
-function shapeMeasureText(layer){
-  const type = featureTypeFromLayer(layer);
-
-  if (type === 'polyline'){
-    const d = polylineTotalDistance(layer);
-    return 'Total: ' + fmtFeetMiles(d);
-  }
-
-  if (type === 'polygon' || type === 'rectangle'){
-    const ac = polygonAreaAcres(layer);
-    if (ac == null) return '';
-    const val = ac >= 10 ? ac.toFixed(1) : ac.toFixed(2);
-    return `Area: ${val} ac`;
-  }
-
-  if (type === 'circle'){
-    const acres = circleAreaAcres(layer);
-    const val   = acres >= 10 ? acres.toFixed(1) : acres.toFixed(2);
-    const r     = layer.getRadius();
-    const yards = r * 1.09361;
-    const rTxt  = yards >= 10 ? Math.round(yards) + ' yd' : yards.toFixed(1) + ' yd';
-    return `Radius: ${rTxt} · Area: ${val} ac`;
-  }
-
-  return '';
-}
-
-function updatePolylineTotalLabel(layer){
-  removeTotalLabel(layer);
-  const latlngs = layer.getLatLngs();
-  const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
-  if (pts.length < 2) return;
-
-  const a = pts[0];
-  const b = pts[pts.length - 1];
-  const anchor = L.latLng(
-    (a.lat + b.lat) / 2,
-    (a.lng + b.lng) / 2
-  );
-
-  const text = shapeMeasureText(layer);
-  if (!text) return;
-
-  const marker = L.marker(anchor, {
-    interactive:false,
-    icon: L.divIcon({
-      className:'',
-      html:`<div class="seglabel">${text}</div>`
-    })
-  });
-
-  marker.addTo(segmentLabelsGroup);
-  layer._totalLabel = marker;
-}
-
-function updateAreaLabel(layer){
-  removeAreaLabel(layer);
-  const text = shapeMeasureText(layer);
-  if (!text) return;
-
-  let center;
-  if (layer instanceof L.Circle){
-    center = layer.getLatLng();
-  } else if (layer.getBounds){
-    center = layer.getBounds().getCenter();
-  } else {
-    return;
-  }
-
-  const marker = L.marker(center, {
-    interactive:false,
-    icon: L.divIcon({
-      className:'',
-      html:`<div class="seglabel">${text}</div>`
-    })
-  });
-
-  marker.addTo(segmentLabelsGroup);
-  layer._areaLabel = marker;
-}
-
-function updateShapeLabels(layer){
-  const type = featureTypeFromLayer(layer);
-  removeSegLabels(layer); // we no longer use per-segment labels
-  removeTotalLabel(layer);
-  removeAreaLabel(layer);
-
-  if (type === 'polyline'){
-    updatePolylineTotalLabel(layer);
-  } else if (type === 'polygon' || type === 'rectangle' || type === 'circle'){
-    updateAreaLabel(layer);
-  }
-}
-
-// Popup for shapes: name + measurement text
-function updateShapePopup(layer){
-  const type = featureTypeFromLayer(layer);
-  const name = layer._bhhName || defaultShapeName(type);
-  const txt  = shapeMeasureText(layer);
-  const html = txt
-    ? `<b>${name}</b><div class="tag">${txt}</div>`
-    : `<b>${name}</b>`;
-  layer.bindPopup(html);
-}
-
-// Initialize a shape layer (click handler, labels, popup)
-function initShapeLayer(layer){
-  if (layer._bhhInit) return;
-  layer._bhhInit = true;
-
-  const type = featureTypeFromLayer(layer);
-  if (!layer._bhhName){
-    layer._bhhName = defaultShapeName(type);
-  }
-
-  // Click: delete in deleteMode, otherwise show popup
-  layer.on('click', () => {
-    if (deleteMode){
-      drawnItems.removeLayer(layer);
-      // saveDraw + label cleanup handled in layerremove listener
-    } else {
-      updateShapeLabels(layer);
-      updateShapePopup(layer);
-      if (layer.openPopup) layer.openPopup();
-    }
-  });
-
-  updateShapeLabels(layer);
-  updateShapePopup(layer);
-}
-
-// Clean up labels + save when a shape is removed
-drawnItems.on('layerremove', (e) => {
-  const l = e.layer;
-  removeSegLabels(l);
-  removeTotalLabel(l);
-  removeAreaLabel(l);
-  saveDraw();
-  if (typeof refreshWaypointsUI === 'function'){
-    refreshWaypointsUI();
-  }
-});
-
 function restoreDraw(){
   const raw = localStorage.getItem(STORAGE_DRAW);
   if (!raw) return;
@@ -322,7 +119,12 @@ function restoreDraw(){
             (feat.properties && feat.properties.name) ||
             defaultShapeName(type);
           drawnItems.addLayer(layer);
-          initShapeLayer(layer);
+
+          // rebuild line labels on load
+          if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+            labelPolylineSegments(layer);
+            updatePolylineTotalLabel(layer);
+          }
         }
       });
 
@@ -332,7 +134,6 @@ function restoreDraw(){
           (c.properties && c.properties.name) ||
           defaultShapeName('circle');
         drawnItems.addLayer(layer);
-        initShapeLayer(layer);
       });
 
     } else if (data.type === 'FeatureCollection') { // legacy
@@ -341,7 +142,10 @@ function restoreDraw(){
           const type = featureTypeFromLayer(layer);
           layer._bhhName = defaultShapeName(type);
           drawnItems.addLayer(layer);
-          initShapeLayer(layer);
+          if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+            labelPolylineSegments(layer);
+            updatePolylineTotalLabel(layer);
+          }
         }
       });
     }
@@ -364,11 +168,6 @@ function ensureDrawPlugin(){
 
 function startDraw(shapeType){
   if (!ensureDrawPlugin()) return;
-
-  // Close any open sheet (especially Tools) so the user can draw on mobile
-  if (typeof closeSheets === 'function') {
-    closeSheets();
-  }
 
   // Disable any previous drawing session
   if (activeDrawHandler) {
@@ -409,8 +208,18 @@ function startDraw(shapeType){
 // When a shape is finished, add it to drawnItems + save
 map.on(L.Draw.Event.CREATED, function (e) {
   const layer = e.layer;
+  const type  = featureTypeFromLayer(layer);
+
+  // give it a name up front
+  layer._bhhName = defaultShapeName(type);
   drawnItems.addLayer(layer);
-  initShapeLayer(layer);
+
+  // Distance labels for polylines
+  if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+    labelPolylineSegments(layer);
+    updatePolylineTotalLabel(layer);
+  }
+
   saveDraw();
 
   // Stop drawing after one shape
@@ -426,13 +235,122 @@ const drawPolygonBtn = document.getElementById('drawPolygonBtn');
 const drawRectBtn    = document.getElementById('drawRectBtn');
 const drawCircleBtn  = document.getElementById('drawCircleBtn');
 
-if (drawLineBtn)    drawLineBtn.onclick    = () => startDraw('line');
-if (drawPolygonBtn) drawPolygonBtn.onclick = () => startDraw('polygon');
-if (drawRectBtn)    drawRectBtn.onclick    = () => startDraw('rectangle');
-if (drawCircleBtn)  drawCircleBtn.onclick  = () => startDraw('circle');
+if (drawLineBtn) {
+  drawLineBtn.onclick = () => {
+    closeSheets();
+    startDraw('line');
+  };
+}
+if (drawPolygonBtn){
+  drawPolygonBtn.onclick = () => {
+    closeSheets();
+    startDraw('polygon');
+  };
+}
+if (drawRectBtn){
+  drawRectBtn.onclick = () => {
+    closeSheets();
+    startDraw('rectangle');
+  };
+}
+if (drawCircleBtn){
+  drawCircleBtn.onclick = () => {
+    closeSheets();
+    startDraw('circle');
+  };
+}
 // [BHH: DRAW – CONTROLS END]
-// [BHH: DRAW – STORAGE END]
 
+
+// distance labels for polylines
+function fmtFeetMiles(m){
+  const ft = m * 3.28084;
+  if (m >= 1609.344) return (m / 1609.344).toFixed(2) + ' mi';
+  return Math.round(ft) + ' ft';
+}
+
+function removeSegLabels(layer){
+  if (layer._segLabels){
+    layer._segLabels.forEach(lbl => segmentLabelsGroup.removeLayer(lbl));
+    layer._segLabels = null;
+  }
+}
+
+function removeTotalLabel(layer){
+  if (layer._totalLabel){
+    segmentLabelsGroup.removeLayer(layer._totalLabel);
+    layer._totalLabel = null;
+  }
+}
+
+function labelPolylineSegments(layer){
+  removeSegLabels(layer);
+  const latlngs = layer.getLatLngs();
+  const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
+  const labels = [];
+
+  for (let i = 1; i < pts.length; i++){
+    const a = pts[i-1], b = pts[i];
+    const d = map.distance(a, b);
+    const mid = L.latLng(
+      (a.lat + b.lat) / 2,
+      (a.lng + b.lng) / 2
+    );
+
+    const marker = L.marker(mid, {
+      interactive:false,
+      icon: L.divIcon({
+        className:'',
+        html:`<div class="seglabel">${fmtFeetMiles(d)}</div>`
+      })
+    });
+
+    marker.addTo(segmentLabelsGroup);
+    labels.push(marker);
+  }
+
+  layer._segLabels = labels;
+}
+
+function polylineTotalDistance(layer){
+  const latlngs = layer.getLatLngs();
+  const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
+  let d = 0;
+  for (let i = 1; i < pts.length; i++){
+    d += map.distance(pts[i-1], pts[i]);
+  }
+  return d;
+}
+
+function updatePolylineTotalLabel(layer){
+  removeTotalLabel(layer);
+  const latlngs = layer.getLatLngs();
+  const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
+  if (pts.length < 2) return;
+
+  const a = pts[pts.length - 2];
+  const b = pts[pts.length - 1];
+  const anchor = L.latLng(
+    (a.lat * 0.3 + b.lat * 0.7),
+    (a.lng * 0.3 + b.lng * 0.7)
+  );
+  const total = fmtFeetMiles(polylineTotalDistance(layer));
+
+  const marker = L.marker(anchor, {
+    interactive:false,
+    icon: L.divIcon({
+      className:'',
+      html:`<div class="seglabel"><b>Total:</b> ${total}</div>`
+    })
+  });
+
+  marker.addTo(segmentLabelsGroup);
+  layer._totalLabel = marker;
+}
+
+function relabelPolyline(layer){
+  labelPolylineSegments(layer);
+}
 
 /*******************
  * OVERLAYS: Ohio Public Hunting
@@ -660,6 +578,7 @@ function buildIndianaCountyLabels(){
 }
 
 async function loadIndianaCounties(){
+  // Try US Census TIGER/Cartographic counties for Indiana (GeoJSON)
   const primary =
     'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
   try {
@@ -690,6 +609,7 @@ async function loadIndianaCounties(){
     console.warn('Primary IN counties source failed', e);
   }
 
+  // Fallback: ArcGIS USA_Counties filtered to Indiana
   try {
     const url =
       'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0/query?where=STATE_NAME%3D%27Indiana%27&outFields=NAME&outSR=4326&f=geojson';
@@ -863,6 +783,7 @@ document.querySelectorAll('.sheet .option').forEach(opt => {
   });
 });
 // [BHH: SHEET – BASEMAP & OVERLAYS END]
+
 
 /*******************
  * MARKERS (WAYPOINTS) + PHOTO NOTES
@@ -1055,21 +976,20 @@ function makePinIcon(type){
 
 // All supported waypoint types
 const markerTypes = {
-  stand:  { label:'Tree Stand',     icon: makePinIcon('stand')  },
-  blind:  { label:'Ground Blind',   icon: makePinIcon('blind')  },
-  buck:   { label:'Buck',           icon: makePinIcon('buck')   },
-  doe:    { label:'Doe',            icon: makePinIcon('doe')    },
-  blood:  { label:'Blood Trail',    icon: makePinIcon('blood')  },
-  scrape: { label:'Scrape',         icon: makePinIcon('scrape') },
-  rub:    { label:'Rub',            icon: makePinIcon('rub')    },
-  trail:  { label:'Trail',          icon: makePinIcon('trail')  },
-  camera: { label:'Trail Camera',   icon: makePinIcon('camera') },
-  food:   { label:'Food Plot',      icon: makePinIcon('food')   },
-  feeder: { label:'Feeder',         icon: makePinIcon('food')   }, // alias for details sheet
-  water:  { label:'Water Source',   icon: makePinIcon('water')  },
-  camp:   { label:'Camp',           icon: makePinIcon('camp')   },
-  truck:  { label:'Truck / Parking',icon: makePinIcon('truck')  },
-  hazard: { label:'Hazard',         icon: makePinIcon('hazard') }
+  stand:  { label:'Tree Stand',      icon: makePinIcon('stand')  },
+  blind:  { label:'Ground Blind',    icon: makePinIcon('blind')  },
+  buck:   { label:'Buck',            icon: makePinIcon('buck')   },
+  doe:    { label:'Doe',             icon: makePinIcon('doe')    },
+  blood:  { label:'Blood Trail',     icon: makePinIcon('blood')  },
+  scrape: { label:'Scrape',          icon: makePinIcon('scrape') },
+  rub:    { label:'Rub',             icon: makePinIcon('rub')    },
+  trail:  { label:'Trail',           icon: makePinIcon('trail')  },
+  camera: { label:'Trail Camera',    icon: makePinIcon('camera') },
+  food:   { label:'Food Plot',       icon: makePinIcon('food')   },
+  water:  { label:'Water Source',    icon: makePinIcon('water')  },
+  camp:   { label:'Camp',            icon: makePinIcon('camp')   },
+  truck:  { label:'Truck / Parking', icon: makePinIcon('truck')  },
+  hazard: { label:'Hazard',          icon: makePinIcon('hazard') }
 };
 
 let activeType = null;
@@ -1183,8 +1103,6 @@ map.on('click', e=>{
   refreshWaypointsUI();
 });
 // [BHH: WAYPOINTS – DATA END]
-
-
 
 
 /*******************
@@ -1764,10 +1682,10 @@ function updateGuideLine(){
       : Math.round(d * 3.28084) + ' ft';
 
   const brg  = bearingDeg(origin, target);
-const dirs = ['N','NE','E','SE','S','SW','W','NW'];
-const card = dirs[Math.round(brg / 45) % 8];
-compBear.textContent = Math.round(brg) + '° ' + card;
-
+  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+  const card = dirs[Math.round(brg / 45) % 8];
+  compBear.textContent = Math.round(brg) + '° ' + card;
+}
 
 // --- Dial / readout ---
 function updateCompassDial(){
@@ -1777,6 +1695,7 @@ function updateCompassDial(){
   const h = deviceHeading;
   const rotation = (h == null ? 0 : h);  // 0° = tip straight up (N)
 
+  // Must match CSS initial transform: translate(-50%, -100%)
   needle.style.transform =
     'translate(-50%, -100%) rotate(' + rotation + 'deg)';
 }
@@ -1801,9 +1720,12 @@ function updateCompassReadout(){
 function onDeviceOrientation(e){
   let hdg = null;
 
+  // iOS Safari: webkitCompassHeading is already compass-style (0° = N, clockwise)
   if (typeof e.webkitCompassHeading === 'number'){
     hdg = e.webkitCompassHeading;
   } else if (typeof e.alpha === 'number'){
+    // Generic: convert alpha (0–360 clockwise) to compass heading:
+    // This mapping works consistently on Android Chrome in your tests:
     hdg = (360 - e.alpha) % 360;
   }
 
@@ -1818,6 +1740,7 @@ async function startCompass(){
   if (compassStarted) return;
   compassStarted = true;
 
+  // iOS permission gate
   try {
     if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function'){
@@ -1827,7 +1750,9 @@ async function startCompass(){
         return;
       }
     }
-  } catch(_){}
+  } catch(_){
+    // Non-iOS: ignore
+  }
 
   if ('ondeviceorientationabsolute' in window){
     window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
@@ -1838,19 +1763,23 @@ async function startCompass(){
     return;
   }
 
+  // Keep origin updated for guide line
   if (navigator.geolocation && !gpsWatchId){
     ensureGPSWatch(false);
   }
 }
 
+// Auto-start on touch / coarse-pointer devices
 if (window.matchMedia('(pointer: coarse)').matches){
   startCompass();
 }
 
+// Backup: "Enable Compass" button in the sheet
 if (compEnableBtn){
   compEnableBtn.addEventListener('click', startCompass);
 }
 
+// Keep guide line in sync when anchor changes or map moves
 compAnchorRadios.forEach(r =>
   r.addEventListener('change', updateGuideLine)
 );
@@ -1861,6 +1790,7 @@ map.on('moveend', () => {
   if (mode === 'center') updateGuideLine();
 });
 
+// Build initial target list once on load
 rebuildCompassTargets();
 // [BHH: COMPASS END]
 
@@ -2029,7 +1959,7 @@ function openSheet(which){
   if (which === 'compass'){
     rebuildCompassTargets();
     updateCompassReadout();
-    startCompass();
+    startCompass();   // ensure compass is running when sheet opens
   }
 
   if (which === 'almanac'){
@@ -2218,7 +2148,7 @@ function gatherShapes(){
     arr.push({
       kind:'shape',
       type,
-      name: l._bhhName || 'Shape',
+      name: l._bhhName || defaultShapeName(type),
       layer:l,
       center
     });
@@ -2351,8 +2281,11 @@ if (wpList){
         markersLayer.removeLayer(obj.layer);
         saveMarkers();
       } else {
+        // remove shape + its labels + save
         drawnItems.removeLayer(obj.layer);
-        // saveDraw + label cleanup handled in layerremove
+        removeSegLabels(obj.layer);
+        removeTotalLabel(obj.layer);
+        saveDraw();
       }
       refreshWaypointsUI();
     }
@@ -2383,7 +2316,6 @@ if (wpList){
         saveMarkers();
       } else {
         obj.layer._bhhName = val;
-        updateShapePopup(obj.layer);
         saveDraw();
       }
     }
@@ -2504,13 +2436,14 @@ if (wpDetSaveBtn){
  * STUBS for score/moon/info (safe no-op implementations)
  *******************/
 function setInfoVisible(visible){
+  // Placeholder: if you had a field info panel, toggle visibility here.
   localStorage.setItem('ui_info_visible', visible ? '1' : '0');
 }
 
 function renderMoon(){
-  // Placeholder
+  // Placeholder: hook your moon phase rendering here if desired.
 }
 
 function computeHuntScore(){
-  // Placeholder
+  // Placeholder: hook your hunt score calculation + UI updates here.
 }
