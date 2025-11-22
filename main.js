@@ -231,7 +231,7 @@ map.on(L.Draw.Event.CREATED, function (e) {
     layer instanceof L.Rectangle ||
     layer instanceof L.Circle
   ){
-    updateShapeMetrics(layer);  // for hunting areas
+    updateShapeMetrics(layer);  // area/perimeter or radius/area
   }
 
   saveDraw();
@@ -243,41 +243,10 @@ map.on(L.Draw.Event.CREATED, function (e) {
   }
 });
 
-
-// Wire buttons in the Tools sheet
-const drawLineBtn    = document.getElementById('drawLineBtn');
-const drawPolygonBtn = document.getElementById('drawPolygonBtn');
-const drawRectBtn    = document.getElementById('drawRectBtn');
-const drawCircleBtn  = document.getElementById('drawCircleBtn');
-
-if (drawLineBtn) {
-  drawLineBtn.onclick = () => {
-    closeSheets();
-    startDraw('line');
-  };
-}
-if (drawPolygonBtn){
-  drawPolygonBtn.onclick = () => {
-    closeSheets();
-    startDraw('polygon');
-  };
-}
-if (drawRectBtn){
-  drawRectBtn.onclick = () => {
-    closeSheets();
-    startDraw('rectangle');
-  };
-}
-if (drawCircleBtn){
-  drawCircleBtn.onclick = () => {
-    closeSheets();
-    startDraw('circle');
-  };
-}
 // [BHH: DRAW – CONTROLS END]
 
 
-// distance labels for polylines + area labels for shapes
+// distance labels for polylines + area/perimeter for shapes
 function fmtFeetMiles(m){
   const ft = m * 3.28084;
   if (m >= 1609.344) return (m / 1609.344).toFixed(2) + ' mi';
@@ -300,12 +269,13 @@ function removeTotalLabel(layer){
 
 function labelPolylineSegments(layer){
   removeSegLabels(layer);
+
   const latlngs = layer.getLatLngs();
   const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
   const labels = [];
 
-  // If this is just a single segment (2 points), skip per-segment tags.
-  // The Total label will handle it so you don’t see duplicates.
+  // If this is just a single segment, skip per-segment tags
+  // so the Total label is the only one you see.
   if (pts.length <= 2){
     layer._segLabels = [];
     return;
@@ -346,6 +316,7 @@ function polylineTotalDistance(layer){
 
 function updatePolylineTotalLabel(layer){
   removeTotalLabel(layer);
+
   const latlngs = layer.getLatLngs();
   const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
   if (pts.length < 2) return;
@@ -356,6 +327,7 @@ function updatePolylineTotalLabel(layer){
     (a.lat * 0.3 + b.lat * 0.7),
     (a.lng * 0.3 + b.lng * 0.7)
   );
+
   const total = fmtFeetMiles(polylineTotalDistance(layer));
 
   const marker = L.marker(anchor, {
@@ -371,11 +343,14 @@ function updatePolylineTotalLabel(layer){
 }
 
 function relabelPolyline(layer){
+  // If you ever wire this to an "edit" event, it will refresh both
+  // per-segment and total distance tags.
   labelPolylineSegments(layer);
   updatePolylineTotalLabel(layer);
 }
 
-// ---- Area / hunting-area metrics (polygons, rectangles, circles) ----
+// --- area / perimeter labels for polygons, rectangles, circles ---
+
 function removeShapeLabel(layer){
   if (layer._shapeLabel){
     segmentLabelsGroup.removeLayer(layer._shapeLabel);
@@ -402,19 +377,15 @@ function updateShapeMetrics(layer){
     const acres  = areaM2 / 4046.85642;
 
     const ft = r * 3.28084;
-    let radiusText;
-    if (ft >= 5280){
-      radiusText = (ft / 5280).toFixed(2) + ' mi radius';
-    } else {
-      radiusText = Math.round(ft) + ' ft radius';
-    }
+    const radiusText =
+      ft >= 5280
+        ? (ft / 5280).toFixed(2) + ' mi radius'
+        : Math.round(ft) + ' ft radius';
 
-    let areaText;
-    if (acres >= 1){
-      areaText = acres.toFixed(2) + ' ac';
-    } else {
-      areaText = Math.round(areaM2) + ' m²';
-    }
+    const areaText =
+      acres >= 1
+        ? acres.toFixed(2) + ' ac'
+        : Math.round(areaM2) + ' m²';
 
     center = layer.getLatLng();
     layer._bhhMetrics = {
@@ -428,7 +399,7 @@ function updateShapeMetrics(layer){
 
     labelLines.push(radiusText, areaText);
 
-  } else { // Polygon / Rectangle
+  } else {
     const latlngs = layer.getLatLngs();
     const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
     if (pts.length < 3) return;
@@ -442,12 +413,10 @@ function updateShapeMetrics(layer){
     const areaM2 = Math.abs(area) / 2;
     const acres  = areaM2 / 4046.85642;
 
-    let areaText;
-    if (acres >= 1){
-      areaText = acres.toFixed(2) + ' ac';
-    } else {
-      areaText = Math.round(areaM2) + ' m²';
-    }
+    const areaText =
+      acres >= 1
+        ? acres.toFixed(2) + ' ac'
+        : Math.round(areaM2) + ' m²';
 
     // Perimeter
     let perM = 0;
@@ -458,12 +427,10 @@ function updateShapeMetrics(layer){
     }
 
     const perFt = perM * 3.28084;
-    let perimeterText;
-    if (perFt >= 5280){
-      perimeterText = (perFt / 5280).toFixed(2) + ' mi';
-    } else {
-      perimeterText = Math.round(perFt) + ' ft';
-    }
+    const perimeterText =
+      perFt >= 5280
+        ? (perFt / 5280).toFixed(2) + ' mi'
+        : Math.round(perFt) + ' ft';
 
     center = layer.getBounds().getCenter();
     layer._bhhMetrics = {
@@ -479,8 +446,7 @@ function updateShapeMetrics(layer){
   }
 
   if (center && labelLines.length){
-    const html =
-      `<div class="seglabel">${labelLines.join('<br>')}</div>`;
+    const html = `<div class="seglabel">${labelLines.join('<br>')}</div>`;
 
     const m = L.marker(center, {
       interactive:false,
@@ -490,6 +456,7 @@ function updateShapeMetrics(layer){
     layer._shapeLabel = m;
   }
 }
+
 
 
 /*******************
