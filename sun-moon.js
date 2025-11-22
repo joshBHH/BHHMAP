@@ -108,3 +108,4 @@
   window.updateSun  = updateSun;
   window.renderMoon = renderMoon;
 })();
+
