@@ -670,34 +670,211 @@ document.querySelectorAll('.sheet .option').forEach(opt => {
 });
 // [BHH: SHEET – BASEMAP & OVERLAYS END]
 
-
 /*******************
  * MARKERS (WAYPOINTS) + PHOTO NOTES
  *******************/
 // [BHH: WAYPOINTS – DATA START]
 const markersLayer = L.featureGroup().addTo(map);
-const STORAGE_MARK = 'bhh_markers_v4';
-const IS_MOBILE = matchMedia('(max-width:640px)').matches;
-const ICON_SZ = IS_MOBILE ? 28 : 32;
-const FONT_SZ = IS_MOBILE ? 16 : 18;
+const STORAGE_MARK = 'bhh_markers_v5';
 
-function makeIcon(bg, emoji){
+// mobile vs desktop pin size
+const IS_MOBILE = matchMedia('(max-width:640px)').matches;
+const PIN_SZ    = IS_MOBILE ? 30 : 34;
+
+// Simple inline SVG pictograms (no text, no emojis)
+const ICON_SVGS = {
+  default: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.7"/>
+      <line x1="12" y1="3"  x2="12" y2="6"  stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <line x1="12" y1="18" x2="12" y2="21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <line x1="3"  y1="12" x2="6"  y2="12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <line x1="18" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <line x1="9"  y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="12" y1="9"  x2="12" y2="15" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+  `,
+
+  buck: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <!-- body -->
+      <circle cx="12" cy="15" r="4" />
+      <!-- head -->
+      <circle cx="12" cy="10" r="2.1" />
+      <!-- antlers -->
+      <path d="M9.3 8 L7.4 6.2 M7.4 6.2 L8.6 5
+               M14.7 8 L16.6 6.2 M16.6 6.2 L15.4 5"
+            fill="none" stroke="currentColor" stroke-width="1.4"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  `,
+
+  doe: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="15" r="4" />
+      <circle cx="12" cy="10" r="2.1" />
+      <path d="M10 9.4 Q9 8.5 8.4 7.5
+               M14 9.4 Q15 8.5 15.6 7.5"
+            fill="none" stroke="currentColor" stroke-width="1.2"
+            stroke-linecap="round"/>
+    </svg>
+  `,
+
+  blood: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7.5 6 L5.7 10.2 A3 3 0 0 0 9.3 10.2 Z" />
+      <path d="M12 5 L10.2 11 A3 3 0 0 0 13.8 11 Z" />
+      <path d="M16.5 6.5 L14.7 10.7 A3 3 0 0 0 18.3 10.7 Z" />
+    </svg>
+  `,
+
+  trail: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 18 Q9 15 11 15 Q13 15 14.5 13.5 Q16 12 18 12"
+            fill="none" stroke="currentColor" stroke-width="1.7"
+            stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="2 2"/>
+    </svg>
+  `,
+
+  stand: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <!-- platform -->
+      <rect x="8" y="7" width="8" height="4" rx="0.8" ry="0.8" />
+      <!-- ladder -->
+      <line x1="10" y1="11" x2="10" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="14" y1="11" x2="14" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="10" y1="13" x2="14" y2="13" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="10" y1="15" x2="14" y2="15" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="10" y1="17" x2="14" y2="17" stroke="currentColor" stroke-width="1.2"/>
+    </svg>
+  `,
+
+  blind: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="8" width="12" height="8" rx="1.4" ry="1.4"/>
+      <rect x="9" y="10" width="6" height="2" fill="#ffffff"/>
+    </svg>
+  `,
+
+  scrape: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <!-- hoof prints -->
+      <ellipse cx="9" cy="10" rx="1.4" ry="2.4" />
+      <ellipse cx="15" cy="10" rx="1.4" ry="2.4" />
+      <!-- disturbed ground -->
+      <path d="M6 16 Q10 14 18 16"
+            fill="none" stroke="currentColor" stroke-width="1.7"
+            stroke-linecap="round"/>
+    </svg>
+  `,
+
+  rub: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10.5" y="6" width="3" height="11" rx="1.3" />
+      <path d="M9 8 L7.5 9.5 M9 11 L7.3 12.3
+               M15 9.5 L16.5 8 M15 12.3 L16.7 11"
+            fill="none" stroke="#ffffff" stroke-width="1.2"
+            stroke-linecap="round"/>
+    </svg>
+  `,
+
+  camera: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="8" width="12" height="8" rx="1.6"/>
+      <circle cx="12" cy="12" r="3.1" fill="#ffffff"/>
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="9"  cy="9.5" r="0.8" />
+    </svg>
+  `,
+
+  food: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 17 Q13 14 13 11 Q13 8 12 6
+               Q11 8 11 11 Q11 14 12 17 Z" />
+      <path d="M9 10 Q6.5 10 6 12
+               Q7.8 12.2 9 11.3"
+            fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round"/>
+      <path d="M15 10 Q17.5 10 18 12
+               Q16.2 12.2 15 11.3"
+            fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round"/>
+    </svg>
+  `,
+
+  water: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 5 L8.5 11.5
+               A4.5 4.5 0 0 0 15.5 11.5 Z"/>
+    </svg>
+  `,
+
+  camp: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M5 17 L12 6 L19 17 Z"
+            fill="none" stroke="currentColor" stroke-width="1.7"
+            stroke-linejoin="round"/>
+      <line x1="10" y1="17" x2="14" y2="17"
+            stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </svg>
+  `,
+
+  truck: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="10" width="9" height="5" rx="1.2"/>
+      <path d="M14 11 H17.5 L19 13 V15 H14 Z"
+            fill="none" stroke="currentColor" stroke-width="1.6"
+            stroke-linejoin="round"/>
+      <circle cx="9"  cy="16.5" r="1.5"/>
+      <circle cx="17" cy="16.5" r="1.5"/>
+    </svg>
+  `,
+
+  hazard: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4.5 18 L12 5 L19.5 18 Z"
+            fill="none" stroke="currentColor" stroke-width="1.7"
+            stroke-linejoin="round"/>
+      <line x1="12" y1="10" x2="12" y2="14.2"
+            stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <circle cx="12" cy="16.7" r="0.9"/>
+    </svg>
+  `
+};
+
+// Build a pin with the SVG inside
+function makePinIcon(type){
+  const svg = ICON_SVGS[type] || ICON_SVGS.default;
   return L.divIcon({
-    className:'',
-    html: `<div style="background:${bg};border:2px solid #333;border-radius:50%;width:${ICON_SZ}px;height:${ICON_SZ}px;display:flex;align-items:center;justify-content:center;font-size:${FONT_SZ}px;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);">${emoji}</div>`,
-    iconSize:[ICON_SZ, ICON_SZ],
-    iconAnchor:[ICON_SZ/2, ICON_SZ],
-    popupAnchor:[0, -ICON_SZ*0.9]
+    className: '',
+    html: `
+      <div class="wp-pin wp-${type}">
+        ${svg}
+      </div>
+    `,
+    iconSize:  [PIN_SZ, PIN_SZ],
+    iconAnchor:[PIN_SZ/2, PIN_SZ],
+    popupAnchor:[0, -PIN_SZ*0.9]
   });
 }
 
+// All supported waypoint types
 const markerTypes = {
-  stand:  {label:'Tree Stand',   emoji:'🎯', icon:makeIcon('#2563eb','🎯')},
-  feeder: {label:'Feeder',       emoji:'🍽️', icon:makeIcon('#16a34a','🍽️')},
-  camera: {label:'Trail Camera', emoji:'📷', icon:makeIcon('#111827','📷')},
-  scrape: {label:'Scrape',       emoji:'🦌', icon:makeIcon('#6d28d9','🦌')},
-  rub:    {label:'Rub',          emoji:'🪵', icon:makeIcon('#b45309','🪵')},
-  water:  {label:'Water Source', emoji:'💧', icon:makeIcon('#0891b2','💧')}
+  stand:  { label:'Tree Stand',     icon: makePinIcon('stand')  },
+  blind:  { label:'Ground Blind',   icon: makePinIcon('blind')  },
+  buck:   { label:'Buck',           icon: makePinIcon('buck')   },
+  doe:    { label:'Doe',            icon: makePinIcon('doe')    },
+  blood:  { label:'Blood Trail',    icon: makePinIcon('blood')  },
+  scrape: { label:'Scrape',         icon: makePinIcon('scrape') },
+  rub:    { label:'Rub',            icon: makePinIcon('rub')    },
+  trail:  { label:'Trail',          icon: makePinIcon('trail')  },
+  camera: { label:'Trail Camera',   icon: makePinIcon('camera') },
+  food:   { label:'Food Plot',      icon: makePinIcon('food')   },
+  water:  { label:'Water Source',   icon: makePinIcon('water')  },
+  camp:   { label:'Camp',           icon: makePinIcon('camp')   },
+  truck:  { label:'Truck / Parking',icon: makePinIcon('truck')  },
+  hazard: { label:'Hazard',         icon: makePinIcon('hazard') }
 };
 
 let activeType = null;
@@ -709,14 +886,13 @@ function setActiveType(type){
 }
 
 function uid(){
-  return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 }
-
 function defaultName(type){
   const base = markerTypes[type]?.label || 'Marker';
-  let n = 1;
-  markersLayer.eachLayer(m => {
-    if (m.options.type === type) n++;
+  let n=1;
+  markersLayer.eachLayer(m=>{
+    if(m.options.type===type) n++;
   });
   return `${base} ${n}`;
 }
@@ -729,24 +905,13 @@ function markerPopupHTML(m){
   const notes = m.options.notes
     ? `<div class="tag" style="margin-top:6px">${m.options.notes.replace(/</g,'&lt;')}</div>`
     : '';
-  return `
-    <b>${m.options.name}</b>
-    <div class="tag">${cfg.label}</div>
-    ${img}${notes}
-    <div style="margin-top:8px">
-      <button class="del">Delete</button>
-    </div>`;
+  return `<b>${m.options.name}</b><div class="tag">${cfg.label}</div>${img}${notes}<div style="margin-top:8px"><button class="del">Delete</button></div>`;
 }
 
 function addMarker(latlng, type, name, id, notes, photo){
-  const cfg = markerTypes[type] || {
-    label:'Marker',
-    emoji:'📍',
-    icon:makeIcon('#555','📍')
-  };
-
+  const cfg = markerTypes[type] || { label:'Marker', icon: makePinIcon('default') };
   const markerId   = id   || uid();
-  const markerName = name || defaultName(type);
+  const markerName = name || defaultName(type || 'default');
 
   const m = L.marker(latlng, {
     icon: cfg.icon,
@@ -762,19 +927,17 @@ function addMarker(latlng, type, name, id, notes, photo){
   setPopup();
 
   m.on('dragend', saveMarkers);
-
   m.on('click', () => {
-    if (deleteMode){
+    if(deleteMode){
       markersLayer.removeLayer(m);
       saveMarkers();
       refreshWaypointsUI();
     }
   });
-
-  m.on('popupopen', (e) => {
+  m.on('popupopen', (e)=>{
     const btn = e.popup.getElement().querySelector('button.del');
-    if (btn){
-      btn.addEventListener('click', () => {
+    if(btn){
+      btn.addEventListener('click', ()=>{
         markersLayer.removeLayer(m);
         saveMarkers();
         refreshWaypointsUI();
@@ -788,47 +951,45 @@ function addMarker(latlng, type, name, id, notes, photo){
 }
 
 function serializeMarkers(){
-  const list = [];
-  markersLayer.eachLayer(m => {
-    const {lat, lng} = m.getLatLng();
+  const list=[];
+  markersLayer.eachLayer(m=>{
+    const {lat,lng} = m.getLatLng();
     list.push({
-      id:   m.options.id,
+      id: m.options.id,
       name: m.options.name,
       type: m.options.type || 'marker',
-      lat,
-      lng,
+      lat, lng,
       notes: m.options.notes || '',
       photo: m.options.photo || ''
     });
   });
   return list;
 }
-
 function deserializeMarkers(list){
   markersLayer.clearLayers();
-  (list || []).forEach(m =>
-    addMarker([m.lat, m.lng], m.type, m.name, m.id, m.notes, m.photo)
+  (list||[]).forEach(m =>
+    addMarker([m.lat,m.lng], m.type, m.name, m.id, m.notes, m.photo)
   );
 }
-
 function saveMarkers(){
   localStorage.setItem(STORAGE_MARK, JSON.stringify(serializeMarkers()));
 }
-
-(function restoreMarkers(){
-  try {
+;(function restoreMarkers(){
+  try{
     const raw = localStorage.getItem(STORAGE_MARK);
-    if (raw) deserializeMarkers(JSON.parse(raw));
-  } catch(e){}
+    if(raw) deserializeMarkers(JSON.parse(raw));
+  }catch(e){}
 })();
 
-map.on('click', e => {
-  if (!activeType) return;
+map.on('click', e=>{
+  if(!activeType) return;
   addMarker(e.latlng, activeType);
   setActiveType(null);
   refreshWaypointsUI();
 });
 // [BHH: WAYPOINTS – DATA END]
+
+
 
 
 /*******************
