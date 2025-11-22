@@ -666,11 +666,13 @@ function updateCompassDial(){
 
   const h = deviceHeading;
 
-  // 0° = pointing North (up), 90° = East (right), etc.
-  const rotation = (h == null ? 0 : h);
+  // On some Android devices, the geometric rotation is 180° off from
+  // the logical heading we display in text. Flip by 180° so the TIP
+  // matches the text heading (N shows tip at N, W shows tip at W).
+  const rotation = ((h == null ? 0 : h) + 180) % 360;
 
-  // MUST match our CSS initial transform: translate(-50%, -100%)
-  // and transform-origin: 50% 100% (base in center of ring)
+  // MUST match our CSS initial transform:
+  // transform: translate(-50%, -100%) rotate(0deg);
   needle.style.transform =
     'translate(-50%, -100%) rotate(' + rotation + 'deg)';
 }
@@ -755,8 +757,7 @@ function onDeviceOrientation(e){
   if (typeof e.webkitCompassHeading === 'number') {
     hdg = e.webkitCompassHeading;
   } else if (typeof e.alpha === 'number') {
-    // Generic fallback: convert alpha to compass-style heading
-    // (alpha is 0–360, clockwise from device's reference)
+    // Android fallback: alpha is often "backwards", we use this form
     hdg = (360 - e.alpha) % 360;
   }
 
@@ -766,7 +767,10 @@ function onDeviceOrientation(e){
   updateCompassReadout();
 }
 
+// Use the existing IS_MOBILE flag to decide if we should run compass
+// (defined earlier from matchMedia('(max-width:640px)'))
 const IS_TOUCH_DEVICE =
+  (typeof IS_MOBILE !== 'undefined' && IS_MOBILE) ||
   ('ontouchstart' in window) ||
   window.matchMedia('(pointer: coarse)').matches;
 
@@ -822,20 +826,19 @@ map.on('moveend', () => {
 // Build initial target list once on load
 rebuildCompassTargets();
 
-// Hide compass UI on desktop / non-touch devices
+// Hide compass UI on non-touch / desktop-ish environments
 (function(){
   if (!IS_TOUCH_DEVICE) {
-    // Floating compass widget
-    const widget = document.getElementById('compassWidget');
+    const widget  = document.getElementById('compassWidget');
     if (widget) widget.style.display = 'none';
 
-    // Compass option in Tools sheet
     const toolRow = document.getElementById('toolCompass');
     if (toolRow) toolRow.style.display = 'none';
   }
 })();
 
 // [BHH: COMPASS END]
+
 
 
 
