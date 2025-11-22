@@ -222,14 +222,6 @@ map.on(L.Draw.Event.CREATED, function (e) {
   layer._bhhName = defaultShapeName(type);
   drawnItems.addLayer(layer);
 
-  map.on(L.Draw.Event.CREATED, function (e) {
-  const layer = e.layer;
-  const type  = featureTypeFromLayer(layer);
-
-  // give it a name up front
-  layer._bhhName = defaultShapeName(type);
-  drawnItems.addLayer(layer);
-
   // Distance labels for polylines
   if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
     labelPolylineSegments(layer);
@@ -239,7 +231,7 @@ map.on(L.Draw.Event.CREATED, function (e) {
     layer instanceof L.Rectangle ||
     layer instanceof L.Circle
   ){
-    updateShapeMetrics(layer);  // <-- new
+    updateShapeMetrics(layer);  // for hunting areas
   }
 
   saveDraw();
@@ -251,15 +243,6 @@ map.on(L.Draw.Event.CREATED, function (e) {
   }
 });
 
-
-  saveDraw();
-
-  // Stop drawing after one shape
-  if (activeDrawHandler) {
-    activeDrawHandler.disable();
-    activeDrawHandler = null;
-  }
-});
 
 // Wire buttons in the Tools sheet
 const drawLineBtn    = document.getElementById('drawLineBtn');
@@ -294,7 +277,7 @@ if (drawCircleBtn){
 // [BHH: DRAW – CONTROLS END]
 
 
-// distance labels for polylines
+// distance labels for polylines + area labels for shapes
 function fmtFeetMiles(m){
   const ft = m * 3.28084;
   if (m >= 1609.344) return (m / 1609.344).toFixed(2) + ' mi';
@@ -321,36 +304,12 @@ function labelPolylineSegments(layer){
   const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
   const labels = [];
 
-  // If this is just a single segment, skip per-segment tags.
+  // If this is just a single segment (2 points), skip per-segment tags.
   // The Total label will handle it so you don’t see duplicates.
   if (pts.length <= 2){
     layer._segLabels = [];
     return;
   }
-
-  for (let i = 1; i < pts.length; i++){
-    const a = pts[i-1], b = pts[i];
-    const d = map.distance(a, b);
-    const mid = L.latLng(
-      (a.lat + b.lat) / 2,
-      (a.lng + b.lng) / 2
-    );
-
-    const marker = L.marker(mid, {
-      interactive:false,
-      icon: L.divIcon({
-        className:'',
-        html:`<div class="seglabel">${fmtFeetMiles(d)}</div>`
-      })
-    });
-
-    marker.addTo(segmentLabelsGroup);
-    labels.push(marker);
-  }
-
-  layer._segLabels = labels;
-}
-
 
   for (let i = 1; i < pts.length; i++){
     const a = pts[i-1], b = pts[i];
@@ -391,7 +350,33 @@ function updatePolylineTotalLabel(layer){
   const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
   if (pts.length < 2) return;
 
-  function removeShapeLabel(layer){
+  const a = pts[pts.length - 2];
+  const b = pts[pts.length - 1];
+  const anchor = L.latLng(
+    (a.lat * 0.3 + b.lat * 0.7),
+    (a.lng * 0.3 + b.lng * 0.7)
+  );
+  const total = fmtFeetMiles(polylineTotalDistance(layer));
+
+  const marker = L.marker(anchor, {
+    interactive:false,
+    icon: L.divIcon({
+      className:'',
+      html:`<div class="seglabel"><b>Total:</b> ${total}</div>`
+    })
+  });
+
+  marker.addTo(segmentLabelsGroup);
+  layer._totalLabel = marker;
+}
+
+function relabelPolyline(layer){
+  labelPolylineSegments(layer);
+  updatePolylineTotalLabel(layer);
+}
+
+// ---- Area / hunting-area metrics (polygons, rectangles, circles) ----
+function removeShapeLabel(layer){
   if (layer._shapeLabel){
     segmentLabelsGroup.removeLayer(layer._shapeLabel);
     layer._shapeLabel = null;
@@ -399,10 +384,10 @@ function updatePolylineTotalLabel(layer){
 }
 
 function updateShapeMetrics(layer){
-  const type = featureTypeFromLayer(layer);
-
   // Only polygons / rectangles / circles get area metrics
-  if (!(layer instanceof L.Polygon) && !(layer instanceof L.Rectangle) && !(layer instanceof L.Circle)){
+  if (!(layer instanceof L.Polygon) &&
+      !(layer instanceof L.Rectangle) &&
+      !(layer instanceof L.Circle)){
     return;
   }
 
@@ -506,30 +491,6 @@ function updateShapeMetrics(layer){
   }
 }
 
-  
-  const a = pts[pts.length - 2];
-  const b = pts[pts.length - 1];
-  const anchor = L.latLng(
-    (a.lat * 0.3 + b.lat * 0.7),
-    (a.lng * 0.3 + b.lng * 0.7)
-  );
-  const total = fmtFeetMiles(polylineTotalDistance(layer));
-
-  const marker = L.marker(anchor, {
-    interactive:false,
-    icon: L.divIcon({
-      className:'',
-      html:`<div class="seglabel"><b>Total:</b> ${total}</div>`
-    })
-  });
-
-  marker.addTo(segmentLabelsGroup);
-  layer._totalLabel = marker;
-}
-
-function relabelPolyline(layer){
-  labelPolylineSegments(layer);
-}
 
 /*******************
  * OVERLAYS: Ohio Public Hunting
@@ -2480,15 +2441,16 @@ if (wpList){
       if (obj.kind === 'wp'){
         markersLayer.removeLayer(obj.layer);
         saveMarkers();
-            } else {
+      } else {
         // remove shape + its labels + save
         drawnItems.removeLayer(obj.layer);
         removeSegLabels(obj.layer);
         removeTotalLabel(obj.layer);
-        removeShapeLabel(obj.layer);   // <-- new
+        removeShapeLabel(obj.layer);
         saveDraw();
       }
-
+      refreshWaypointsUI();
+    }
 
     if (e.target.classList.contains('edit') && obj.kind === 'wp'){
       openWaypointDetail(obj.layer);
@@ -2499,6 +2461,8 @@ if (wpList){
       openSheet('compass');
     }
   });
+}
+
 
   wpList.addEventListener('input', (e) => {
     const item = e.target.closest('.item');
