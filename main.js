@@ -752,10 +752,11 @@ function normalizeHeading(raw){
   const isAndroid = /Android/i.test(ua);
   const isChrome  = /Chrome/i.test(ua);
 
-  // On your Android/Chrome device the sensor appears 180° off.
-  // Apply that correction ONCE here so text and needle both match.
   if (isAndroid && isChrome) {
-    h = (h + 180) % 360;
+    // Fix: swap North/South while keeping East/West correct
+    // If current heading says N but you’re actually facing S (and vice versa),
+    // this flips those two without changing E/W.
+    h = (180 - h + 360) % 360;
   }
 
   return h;
