@@ -418,13 +418,22 @@ body,
   cursor: grabbing;
 }
 
-/* Compass widget */
+/* Compass widget – show on phones/tablets, hide on big desktop screens */
 #compassWidget {
   position: fixed;
   bottom: 90px;
   right: 12px;
   z-index: 1300;
+  display: block;          /* FORCE visible by default */
 }
+
+/* Hide on large desktop viewports only */
+@media (min-width: 1100px) {
+  #compassWidget {
+    display: none;
+  }
+}
+
 
 .compass-ring {
   position: relative;
