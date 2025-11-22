@@ -743,6 +743,7 @@ function updateCompassReadout(){
 
 // --- Normalize heading so we only adjust ONCE ---
 function normalizeHeading(raw){
+function normalizeHeading(raw){
   if (raw == null || isNaN(raw)) return null;
 
   // Put into [0, 360)
@@ -752,11 +753,10 @@ function normalizeHeading(raw){
   const isAndroid = /Android/i.test(ua);
   const isChrome  = /Chrome/i.test(ua);
 
+  // Your Android + Chrome readings are globally 180° off (N<->S, E<->W).
+  // This flips the heading so it matches real-world orientation.
   if (isAndroid && isChrome) {
-    // Fix: swap North/South while keeping East/West correct
-    // If current heading says N but you’re actually facing S (and vice versa),
-    // this flips those two without changing E/W.
-    h = (180 - h + 360) % 360;
+    h = (h + 180) % 360;
   }
 
   return h;
