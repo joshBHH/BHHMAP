@@ -460,35 +460,21 @@ body,
 .compass-label.e { right: 4px; top: 50%; transform: translateY(-50%); }
 .compass-label.w { left: 4px;  top: 50%; transform: translateY(-50%); }
 
-/* Needle container (rotated by JS) */
+/* Needle: tip points UP at 0°; base is in the center of the ring */
 .compass-needle {
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: 40px;
-  height: 40px;
-  transform-origin: 50% 50%;          /* rotate around center of compass */
-  transform: translate(-50%, -50%) rotate(0deg);
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,.8));
-  pointer-events: none;
-}
-
-/* The actual triangle pointer
-   - Tip sits near the top of the circle
-   - Base sits at the center of the compass
-*/
-.compass-needle::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -2px;                          /* tip slightly above center box */
-  transform: translateX(-50%);
+  top: 50%;                 /* center of the circle */
   width: 0;
   height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-bottom: 22px solid #f97316;  /* arrow pointing UP at 0deg */
+  border-bottom: 22px solid #f97316;  /* triangle pointing UP */
+  transform-origin: 50% 100%;         /* pivot at the base (bottom center) */
+  transform: translate(-50%, -100%) rotate(0deg);
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.8));
 }
+
 
 
 
