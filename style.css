@@ -475,6 +475,13 @@ body,
   filter: drop-shadow(0 1px 3px rgba(0,0,0,.8));
 }
 
+/* Hide compass UI on desktop / fine-pointer devices */
+@media (pointer: fine) {
+  #compassWidget,
+  #toolCompass {
+    display: none;
+  }
+}
 
 
 
