@@ -66,16 +66,15 @@
     <!-- [BHH: UI – STATE BADGE END] -->
 
     <!-- Compass overlay (draggable) -->
-<div id="compassWidget">
-  <div id="compassWidgetHandle" class="compass-ring">
-    <div class="compass-label n">N</div>
-    <div class="compass-label e">E</div>
-    <div class="compass-label s">S</div>
-    <div class="compass-label w">W</div>
-    <div id="compassNeedle" class="compass-needle"></div>
-  </div>
-</div>
-
+    <div id="compassWidget">
+      <div id="compassWidgetHandle" class="compass-ring">
+        <div class="compass-label n">N</div>
+        <div class="compass-label e">E</div>
+        <div class="compass-label s">S</div>
+        <div class="compass-label w">W</div>
+        <div id="compassNeedle" class="compass-needle"></div>
+      </div>
+    </div>
 
     <!-- [BHH: UI – INFO PANEL START] -->
     <!-- Field Info panel (hidden by default; draggable) -->
@@ -107,23 +106,22 @@
     <!-- [BHH: UI – BOTTOM MENU START] -->
     <!-- Bottom main menu (no Radar button) -->
     <nav class="main-menu" id="mainMenu">
-  <button id="menuWind" class="wind-btn">
-    <span id="windText">Wind: --</span>
-  </button>
-  <button id="menuAlmanac">Almanac</button>
-  <button id="menuTools">Tools</button>
-  <button id="menuShop">Shop Gear</button>
-  <button id="menuLocate">Locate Me</button>
+      <button id="menuWind" class="wind-btn">
+        <span id="windText">Wind: --</span>
+      </button>
+      <button id="menuAlmanac">Almanac</button>
+      <button id="menuTools">Tools</button>
+      <button id="menuShop">Shop Gear</button>
+      <button id="menuLocate">Locate Me</button>
 
-  <!-- Hidden file input for imports (unchanged) -->
-  <input
-    type="file"
-    id="fileImport"
-    accept=".json,.geojson,.kml,.gpx,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,application/xml"
-    style="display: none;"
-  />
-</nav>
-
+      <!-- Hidden file input for imports (unchanged) -->
+      <input
+        type="file"
+        id="fileImport"
+        accept=".json,.geojson,.kml,.gpx,application/json,application/geo+json,application/vnd.google-earth.kml+xml,application/gpx+xml,text/xml,application/xml"
+        style="display: none;"
+      />
+    </nav>
     <!-- [BHH: UI – BOTTOM MENU END] -->
 
     <!-- Shared backdrop for sheets -->
@@ -197,70 +195,68 @@
 
     <!-- Tools sheet -->
     <div class="sheet" id="toolsSheet" aria-hidden="true">
-  <div class="grab"></div>
+      <div class="grab"></div>
 
-  <!-- Drawing tools section in Tools sheet -->
-<h4>Drawing</h4>
-<div class="row" style="gap:6px; flex-wrap:wrap;">
-  <button class="btn" id="drawLineBtn">Line</button>
-  <button class="btn" id="drawPolygonBtn">Area</button>
-  <button class="btn" id="drawRectBtn">Rectangle</button>
-  <button class="btn" id="drawCircleBtn">Circle</button>
-</div>
-<p class="tag" style="margin-top:4px;">
-  Tap a shape type, then tap/drag on the map to draw. Shapes save automatically.
-</p>
-    
+      <!-- Drawing tools section in Tools sheet -->
+      <h4>Drawing</h4>
+      <div class="row" style="gap:6px; flex-wrap:wrap;">
+        <button class="btn" id="drawLineBtn">Line</button>
+        <button class="btn" id="drawPolygonBtn">Area</button>
+        <button class="btn" id="drawRectBtn">Rectangle</button>
+        <button class="btn" id="drawCircleBtn">Circle</button>
+      </div>
+      <p class="tag" style="margin-top:4px;">
+        Tap a shape type, the sheet closes, then tap/drag on the map to draw. Shapes save automatically.
+      </p>
       
-  <h4>Tools</h4>
+      <h4>Tools</h4>
 
-  <!-- Waypoints manager -->
-  <div class="option" id="toolWaypoints">
-    <span>Waypoints</span>
-    <button class="btn">Open</button>
-  </div>
+      <!-- Waypoints manager -->
+      <div class="option" id="toolWaypoints">
+        <span>Waypoints</span>
+        <button class="btn">Open</button>
+      </div>
 
-  <!-- Track recorder -->
-  <div class="option" id="toolTrack">
-    <span>Track</span>
-    <button class="btn">Open</button>
-  </div>
+      <!-- Track recorder -->
+      <div class="option" id="toolTrack">
+        <span>Track</span>
+        <button class="btn">Open</button>
+      </div>
 
-  <!-- Compass -->
-  <div class="option" id="toolCompass">
-    <span>Compass</span>
-    <button class="btn">Open</button>
-  </div>
+      <!-- Compass -->
+      <div class="option" id="toolCompass">
+        <span>Compass</span>
+        <button class="btn">Open</button>
+      </div>
 
-  <!-- State selector (moved here from bottom bar) -->
-  <div class="option" id="toolState">
-    <span>Change State</span>
-    <button class="btn" id="menuState">Open</button>
-  </div>
+      <!-- State selector (moved here from bottom bar) -->
+      <div class="option" id="toolState">
+        <span>Change State</span>
+        <button class="btn" id="menuState">Open</button>
+      </div>
 
-  <!-- Export (moved here from bottom bar, keeps same IDs) -->
-  <div class="option" id="toolExport">
-    <span>Export data</span>
-    <button class="btn" id="btnExport">Export</button>
-  </div>
+      <!-- Export -->
+      <div class="option" id="toolExport">
+        <span>Export data</span>
+        <button class="btn" id="btnExport">Export</button>
+      </div>
 
-  <!-- Import (moved here from bottom bar, keeps same IDs) -->
-  <div class="option" id="toolImport">
-    <span>Import data</span>
-    <button class="btn" id="btnImport">Import</button>
-  </div>
+      <!-- Import -->
+      <div class="option" id="toolImport">
+        <span>Import data</span>
+        <button class="btn" id="btnImport">Import</button>
+      </div>
 
-  <!-- Delete mode toggle (now only in Tools) -->
-  <div class="option">
-    <span>Delete mode</span>
-    <input id="toolDeleteToggle" type="checkbox" />
-  </div>
+      <!-- Delete mode toggle -->
+      <div class="option">
+        <span>Delete mode</span>
+        <input id="toolDeleteToggle" type="checkbox" />
+      </div>
 
-  <p class="tag">
-    Tip: “Delete mode” lets you tap items on the map to remove them.
-  </p>
-</div>
-
+      <p class="tag">
+        Tip: “Delete mode” lets you tap items on the map (markers & shapes) to remove them.
+      </p>
+    </div>
 
     <!-- Waypoints + Shapes manager sheet -->
     <div class="sheet" id="waypointsSheet" aria-hidden="true">
@@ -276,21 +272,21 @@
           "
         >
           <select id="wpType">
-  <option value="buck">Buck</option>
-  <option value="doe">Doe</option>
-  <option value="blood">Blood Trail</option>
-  <option value="trail">Trail</option>
-  <option value="stand">Tree Stand</option>
-  <option value="blind">Ground Blind</option>
-  <option value="scrape">Scrape</option>
-  <option value="rub">Rub</option>
-  <option value="camera">Trail Camera</option>
-  <option value="food">Food Plot</option>
-  <option value="water">Water Source</option>
-  <option value="camp">Camp</option>
-  <option value="truck">Truck / Parking</option>
-  <option value="hazard">Hazard</option>
-</select>
+            <option value="buck">Buck</option>
+            <option value="doe">Doe</option>
+            <option value="blood">Blood Trail</option>
+            <option value="trail">Trail</option>
+            <option value="stand">Tree Stand</option>
+            <option value="blind">Ground Blind</option>
+            <option value="scrape">Scrape</option>
+            <option value="rub">Rub</option>
+            <option value="camera">Trail Camera</option>
+            <option value="food">Food Plot</option>
+            <option value="water">Water Source</option>
+            <option value="camp">Camp</option>
+            <option value="truck">Truck / Parking</option>
+            <option value="hazard">Hazard</option>
+          </select>
 
           <input id="wpName" type="text" placeholder="Name (optional)" />
         </div>
@@ -521,7 +517,7 @@
         </label>
       </div>
 
-      <!-- Placeholders for future states (disabled for now so they don’t break overlays) -->
+      <!-- Placeholders for future states -->
       <div class="option" style="opacity: 0.6; cursor: not-allowed;">
         <label
           style="
@@ -675,6 +671,9 @@
     </div>
     <!-- [BHH: UI – SHEETS END] -->
   </div>
+
+  <!-- Turf.js for accurate area measurements -->
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
   <!-- BHH main logic -->
   <script src="field-info.js"></script>
