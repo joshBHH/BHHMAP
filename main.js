@@ -114,27 +114,35 @@ function restoreDraw(){
     if (data && data.geojson) {
       L.geoJSON(data.geojson, {
         onEachFeature:(feat, layer) => {
-          const type = featureTypeFromLayer(layer);
-          layer._bhhName =
-            (feat.properties && feat.properties.name) ||
-            defaultShapeName(type);
-          drawnItems.addLayer(layer);
+  const type = featureTypeFromLayer(layer);
+  layer._bhhName =
+    (feat.properties && feat.properties.name) ||
+    defaultShapeName(type);
+  drawnItems.addLayer(layer);
 
-          // rebuild line labels on load
-          if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-            labelPolylineSegments(layer);
-            updatePolylineTotalLabel(layer);
-          }
-        }
+  // rebuild line labels on load
+  if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+    labelPolylineSegments(layer);
+    updatePolylineTotalLabel(layer);
+  } else if (
+    layer instanceof L.Polygon ||
+    layer instanceof L.Rectangle
+  ){
+    updateShapeMetrics(layer);  // <-- new
+  }
+}
+
       });
 
       (data.circles || []).forEach(c => {
-        const layer = L.circle([c.lat, c.lng], { radius:c.radius });
-        layer._bhhName =
-          (c.properties && c.properties.name) ||
-          defaultShapeName('circle');
-        drawnItems.addLayer(layer);
-      });
+  const layer = L.circle([c.lat, c.lng], { radius:c.radius });
+  layer._bhhName =
+    (c.properties && c.properties.name) ||
+    defaultShapeName('circle');
+  drawnItems.addLayer(layer);
+  updateShapeMetrics(layer);  // <-- add this
+});
+
 
     } else if (data.type === 'FeatureCollection') { // legacy
       L.geoJSON(data, {
@@ -214,11 +222,35 @@ map.on(L.Draw.Event.CREATED, function (e) {
   layer._bhhName = defaultShapeName(type);
   drawnItems.addLayer(layer);
 
+  map.on(L.Draw.Event.CREATED, function (e) {
+  const layer = e.layer;
+  const type  = featureTypeFromLayer(layer);
+
+  // give it a name up front
+  layer._bhhName = defaultShapeName(type);
+  drawnItems.addLayer(layer);
+
   // Distance labels for polylines
   if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
     labelPolylineSegments(layer);
     updatePolylineTotalLabel(layer);
+  } else if (
+    layer instanceof L.Polygon ||
+    layer instanceof L.Rectangle ||
+    layer instanceof L.Circle
+  ){
+    updateShapeMetrics(layer);  // <-- new
   }
+
+  saveDraw();
+
+  // Stop drawing after one shape
+  if (activeDrawHandler) {
+    activeDrawHandler.disable();
+    activeDrawHandler = null;
+  }
+});
+
 
   saveDraw();
 
@@ -289,6 +321,37 @@ function labelPolylineSegments(layer){
   const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
   const labels = [];
 
+  // If this is just a single segment, skip per-segment tags.
+  // The Total label will handle it so you don’t see duplicates.
+  if (pts.length <= 2){
+    layer._segLabels = [];
+    return;
+  }
+
+  for (let i = 1; i < pts.length; i++){
+    const a = pts[i-1], b = pts[i];
+    const d = map.distance(a, b);
+    const mid = L.latLng(
+      (a.lat + b.lat) / 2,
+      (a.lng + b.lng) / 2
+    );
+
+    const marker = L.marker(mid, {
+      interactive:false,
+      icon: L.divIcon({
+        className:'',
+        html:`<div class="seglabel">${fmtFeetMiles(d)}</div>`
+      })
+    });
+
+    marker.addTo(segmentLabelsGroup);
+    labels.push(marker);
+  }
+
+  layer._segLabels = labels;
+}
+
+
   for (let i = 1; i < pts.length; i++){
     const a = pts[i-1], b = pts[i];
     const d = map.distance(a, b);
@@ -328,6 +391,122 @@ function updatePolylineTotalLabel(layer){
   const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
   if (pts.length < 2) return;
 
+  function removeShapeLabel(layer){
+  if (layer._shapeLabel){
+    segmentLabelsGroup.removeLayer(layer._shapeLabel);
+    layer._shapeLabel = null;
+  }
+}
+
+function updateShapeMetrics(layer){
+  const type = featureTypeFromLayer(layer);
+
+  // Only polygons / rectangles / circles get area metrics
+  if (!(layer instanceof L.Polygon) && !(layer instanceof L.Rectangle) && !(layer instanceof L.Circle)){
+    return;
+  }
+
+  removeShapeLabel(layer);
+
+  let center = null;
+  const labelLines = [];
+
+  if (layer instanceof L.Circle){
+    const r = layer.getRadius(); // meters
+    const areaM2 = Math.PI * r * r;
+    const acres  = areaM2 / 4046.85642;
+
+    const ft = r * 3.28084;
+    let radiusText;
+    if (ft >= 5280){
+      radiusText = (ft / 5280).toFixed(2) + ' mi radius';
+    } else {
+      radiusText = Math.round(ft) + ' ft radius';
+    }
+
+    let areaText;
+    if (acres >= 1){
+      areaText = acres.toFixed(2) + ' ac';
+    } else {
+      areaText = Math.round(areaM2) + ' m²';
+    }
+
+    center = layer.getLatLng();
+    layer._bhhMetrics = {
+      kind: 'circle',
+      radiusM: r,
+      radiusText,
+      areaM2,
+      acres,
+      areaText
+    };
+
+    labelLines.push(radiusText, areaText);
+
+  } else { // Polygon / Rectangle
+    const latlngs = layer.getLatLngs();
+    const pts = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
+    if (pts.length < 3) return;
+
+    // Project to meters and use shoelace formula for area
+    const proj = pts.map(ll => map.options.crs.project(ll)); // {x,y} in meters
+    let area = 0;
+    for (let i = 0, j = proj.length - 1; i < proj.length; j = i++){
+      area += (proj[j].x * proj[i].y - proj[i].x * proj[j].y);
+    }
+    const areaM2 = Math.abs(area) / 2;
+    const acres  = areaM2 / 4046.85642;
+
+    let areaText;
+    if (acres >= 1){
+      areaText = acres.toFixed(2) + ' ac';
+    } else {
+      areaText = Math.round(areaM2) + ' m²';
+    }
+
+    // Perimeter
+    let perM = 0;
+    for (let i = 0; i < pts.length; i++){
+      const a = pts[i];
+      const b = pts[(i+1) % pts.length];
+      perM += map.distance(a, b);
+    }
+
+    const perFt = perM * 3.28084;
+    let perimeterText;
+    if (perFt >= 5280){
+      perimeterText = (perFt / 5280).toFixed(2) + ' mi';
+    } else {
+      perimeterText = Math.round(perFt) + ' ft';
+    }
+
+    center = layer.getBounds().getCenter();
+    layer._bhhMetrics = {
+      kind: 'polygon',
+      areaM2,
+      acres,
+      areaText,
+      perimeterM: perM,
+      perimeterText
+    };
+
+    labelLines.push(areaText, perimeterText);
+  }
+
+  if (center && labelLines.length){
+    const html =
+      `<div class="seglabel">${labelLines.join('<br>')}</div>`;
+
+    const m = L.marker(center, {
+      interactive:false,
+      icon: L.divIcon({ className:'', html })
+    }).addTo(segmentLabelsGroup);
+
+    layer._shapeLabel = m;
+  }
+}
+
+  
   const a = pts[pts.length - 2];
   const b = pts[pts.length - 1];
   const anchor = L.latLng(
@@ -2145,16 +2324,24 @@ function gatherShapes(){
       l.getBounds
         ? l.getBounds().getCenter()
         : (l.getLatLng ? l.getLatLng() : map.getCenter());
+
+    // Ensure metrics are up to date for area-type shapes
+    if (l instanceof L.Polygon || l instanceof L.Rectangle || l instanceof L.Circle){
+      updateShapeMetrics(l);
+    }
+
     arr.push({
       kind:'shape',
       type,
       name: l._bhhName || defaultShapeName(type),
       layer:l,
-      center
+      center,
+      metrics: l._bhhMetrics || null
     });
   });
   return arr;
 }
+
 
 function getWaypoints(){
   const pts = [];
@@ -2226,25 +2413,38 @@ function refreshWaypointsUI(){
   );
 
   wpList.innerHTML =
-    items.length === 0
-      ? '<p class="tag" style="margin-top:8px">No items yet.</p>'
-      : items.map((w,i) => `
-          <div class="item" data-kind="${w.kind}" data-idx="${i}">
-            <div class="emoji">${emojiFor(w)}</div>
-            <div class="name">
-              <input type="text"
-                     value="${(w.name || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"/>
-            </div>
-            <div class="actions"><button class="btn fly">Fly</button></div>
-            ${
-              w.kind === 'wp'
-                ? '<div class="actions"><button class="btn guide">Guide</button></div><div class="actions"><button class="btn edit">Edit</button></div>'
-                : '<div></div><div></div>'
-            }
-            <div class="actions">
-              <button class="btn danger del">Delete</button>
-            </div>
-          </div>`).join('');
+  items.length === 0
+    ? '<p class="tag" style="margin-top:8px">No items yet.</p>'
+    : items.map((w,i) => {
+        let meta = '';
+        if (w.kind === 'shape' && w.metrics){
+          if (w.type === 'circle'){
+            meta = `<div class="meta">${w.metrics.radiusText} • ${w.metrics.areaText}</div>`;
+          } else {
+            meta = `<div class="meta">${w.metrics.perimeterText} • ${w.metrics.areaText}</div>`;
+          }
+        }
+
+        return `
+        <div class="item" data-kind="${w.kind}" data-idx="${i}">
+          <div class="emoji">${emojiFor(w)}</div>
+          <div class="name">
+            <input type="text"
+                   value="${(w.name || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"/>
+            ${meta}
+          </div>
+          <div class="actions"><button class="btn fly">Fly</button></div>
+          ${
+            w.kind === 'wp'
+              ? '<div class="actions"><button class="btn guide">Guide</button></div><div class="actions"><button class="btn edit">Edit</button></div>'
+              : '<div></div><div></div>'
+          }
+          <div class="actions">
+            <button class="btn danger del">Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+
 
   rebuildCompassTargets();
 }
@@ -2280,15 +2480,15 @@ if (wpList){
       if (obj.kind === 'wp'){
         markersLayer.removeLayer(obj.layer);
         saveMarkers();
-      } else {
+            } else {
         // remove shape + its labels + save
         drawnItems.removeLayer(obj.layer);
         removeSegLabels(obj.layer);
         removeTotalLabel(obj.layer);
+        removeShapeLabel(obj.layer);   // <-- new
         saveDraw();
       }
-      refreshWaypointsUI();
-    }
+
 
     if (e.target.classList.contains('edit') && obj.kind === 'wp'){
       openWaypointDetail(obj.layer);
