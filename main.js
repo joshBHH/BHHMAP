@@ -606,15 +606,21 @@ const compTargetSel     = document.getElementById('compTarget');
 const compAnchorRadios  = Array.from(document.querySelectorAll('input[name="compAnchor"]'));
 const compDist          = document.getElementById('compDist');
 const compBear          = document.getElementById('compBear');
-const compEnableBtn     = document.getElementById('compEnable'); // still exists in the sheet
+const compEnableBtn     = document.getElementById('compEnable');
 
 let deviceHeading = null;
 let guideTargetId = localStorage.getItem('guide_target') || '';
-const guideLine   = L.polyline([], { color:'#fdae6b', weight:3, dashArray:'6,6' }).addTo(map);
+const guideLine   = L.polyline([], {
+  color: '#fdae6b',
+  weight: 3,
+  dashArray: '6,6'
+}).addTo(map);
 
+// Basic helpers
 function toRad2(x){ return x * Math.PI / 180; }
 function toDeg2(x){ return x * 180 / Math.PI; }
 
+// Bearing from A->B in degrees (0° = N, clockwise)
 function bearingDeg(a, b){
   const y =
     Math.sin(toRad2(b.lng - a.lng)) *
@@ -628,6 +634,7 @@ function bearingDeg(a, b){
   return (toDeg2(Math.atan2(y, x)) + 360) % 360;
 }
 
+// Build dropdown of waypoints as compass targets
 function rebuildCompassTargets(){
   const wps = [];
   markersLayer.eachLayer(m => {
@@ -659,12 +666,13 @@ function updateCompassDial(){
 
   const h = deviceHeading;
 
-  // We add 180° because the drawn triangle is inverted relative to the heading.
-  // This flips it so the TIP of the triangle points toward the heading shown in text.
-  const rotation = (h == null ? 0 : (h + 180) % 360);
+  // 0° = pointing North (up), 90° = East (right), etc.
+  const rotation = (h == null ? 0 : h);
 
+  // MUST match our CSS initial transform: translate(-50%, -100%)
+  // and transform-origin: 50% 100% (base in center of ring)
   needle.style.transform =
-    'translate(-50%, -50%) rotate(' + rotation + 'deg)';
+    'translate(-50%, -100%) rotate(' + rotation + 'deg)';
 }
 
 function setGuideTarget(id){
@@ -739,17 +747,16 @@ function updateCompassReadout(){
   updateCompassDial();
 }
 
+// Device orientation handler
 function onDeviceOrientation(e){
   let hdg = null;
 
-  // iOS Safari
+  // iOS Safari gives webkitCompassHeading (0° = N, clockwise)
   if (typeof e.webkitCompassHeading === 'number') {
-    // 0 = North, increases clockwise
     hdg = e.webkitCompassHeading;
   } else if (typeof e.alpha === 'number') {
-    // Generic: convert alpha (0–360) to compass heading
-    // "alpha" is clockwise from device's initial orientation;
-    // this common conversion makes 0 ≈ North.
+    // Generic fallback: convert alpha to compass-style heading
+    // (alpha is 0–360, clockwise from device's reference)
     hdg = (360 - e.alpha) % 360;
   }
 
@@ -759,8 +766,14 @@ function onDeviceOrientation(e){
   updateCompassReadout();
 }
 
+const IS_TOUCH_DEVICE =
+  ('ontouchstart' in window) ||
+  window.matchMedia('(pointer: coarse)').matches;
+
 async function startCompass(){
-  // Auto-enable on mobile; still may show browser permission prompt on iOS
+  if (!IS_TOUCH_DEVICE) return;  // don't run on desktop
+
+  // iOS 13+ permission prompt
   try {
     if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -783,19 +796,19 @@ async function startCompass(){
     return;
   }
 
-  // Keep origin updated via GPS if available (so guide line behaves)
+  // Keep origin updated via GPS so guide line behaves
   if (navigator.geolocation && !gpsWatchId) {
     ensureGPSWatch(false);
   }
 }
 
-// Auto-start compass on touch / coarse-pointer devices (mobile)
-if (window.matchMedia('(pointer: coarse)').matches) {
+// Auto-start compass on touch devices
+if (IS_TOUCH_DEVICE) {
   startCompass();
 }
 
-// Also let the "Enable Compass" button manually force it (as backup)
-if (compEnableBtn) {
+// "Enable Compass" button as a backup (mobile only)
+if (compEnableBtn && IS_TOUCH_DEVICE) {
   compEnableBtn.addEventListener('click', startCompass);
 }
 
@@ -808,21 +821,22 @@ map.on('moveend', () => {
 
 // Build initial target list once on load
 rebuildCompassTargets();
+
 // Hide compass UI on desktop / non-touch devices
 (function(){
-  const isTouch = window.matchMedia('(pointer: coarse)').matches;
-  if (!isTouch) {
-    // Hide the floating compass widget
+  if (!IS_TOUCH_DEVICE) {
+    // Floating compass widget
     const widget = document.getElementById('compassWidget');
     if (widget) widget.style.display = 'none';
 
-    // Hide the Compass option inside Tools sheet
+    // Compass option in Tools sheet
     const toolRow = document.getElementById('toolCompass');
     if (toolRow) toolRow.style.display = 'none';
   }
 })();
 
 // [BHH: COMPASS END]
+
 
 
 
