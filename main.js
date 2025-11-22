@@ -616,7 +616,6 @@ const guideLine   = L.polyline([], {
   dashArray: '6,6'
 }).addTo(map);
 
-// Basic helpers
 function toRad2(x){ return x * Math.PI / 180; }
 function toDeg2(x){ return x * 180 / Math.PI; }
 
@@ -664,17 +663,12 @@ function updateCompassDial(){
   const needle = document.getElementById('compassNeedle');
   if (!needle) return;
 
-  const h = deviceHeading;
+  const h = deviceHeading == null ? 0 : deviceHeading;
+  const rotation = ((h % 360) + 360) % 360; // normalize
 
-  // On some Android devices, the geometric rotation is 180° off from
-  // the logical heading we display in text. Flip by 180° so the TIP
-  // matches the text heading (N shows tip at N, W shows tip at W).
-  const rotation = ((h == null ? 0 : h) + 180) % 360;
-
-  // MUST match our CSS initial transform:
-  // transform: translate(-50%, -100%) rotate(0deg);
+  // MUST match CSS initial transform: translate(-50%, -100%) rotate(0deg)
   needle.style.transform =
-    'translate(-50%, -100%) rotate(' + rotation + 'deg)';
+    `translate(-50%, -100%) rotate(${rotation}deg)`;
 }
 
 function setGuideTarget(id){
@@ -753,11 +747,11 @@ function updateCompassReadout(){
 function onDeviceOrientation(e){
   let hdg = null;
 
-  // iOS Safari gives webkitCompassHeading (0° = N, clockwise)
+  // iOS Safari
   if (typeof e.webkitCompassHeading === 'number') {
-    hdg = e.webkitCompassHeading;
+    hdg = e.webkitCompassHeading;  // 0° = North, clockwise
   } else if (typeof e.alpha === 'number') {
-    // Android fallback: alpha is often "backwards", we use this form
+    // Android: alpha 0–360; this form matches the heading text you liked
     hdg = (360 - e.alpha) % 360;
   }
 
@@ -767,8 +761,7 @@ function onDeviceOrientation(e){
   updateCompassReadout();
 }
 
-// Use the existing IS_MOBILE flag to decide if we should run compass
-// (defined earlier from matchMedia('(max-width:640px)'))
+// Use mobile / coarse pointer detection
 const IS_TOUCH_DEVICE =
   (typeof IS_MOBILE !== 'undefined' && IS_MOBILE) ||
   ('ontouchstart' in window) ||
@@ -791,18 +784,12 @@ async function startCompass(){
     // Non-iOS browsers: ignore
   }
 
-  if ('ondeviceorientationabsolute' in window) {
-    window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
-  } else if ('ondeviceorientation' in window) {
+  // Use plain deviceorientation only to avoid double / weird absolute flips
+  if ('ondeviceorientation' in window) {
     window.addEventListener('deviceorientation', onDeviceOrientation, true);
   } else {
     compHeadingText.textContent = 'Heading: not supported';
     return;
-  }
-
-  // Keep origin updated via GPS so guide line behaves
-  if (navigator.geolocation && !gpsWatchId) {
-    ensureGPSWatch(false);
   }
 }
 
@@ -825,22 +812,7 @@ map.on('moveend', () => {
 
 // Build initial target list once on load
 rebuildCompassTargets();
-
-// Hide compass UI on non-touch / desktop-ish environments
-(function(){
-  if (!IS_TOUCH_DEVICE) {
-    const widget  = document.getElementById('compassWidget');
-    if (widget) widget.style.display = 'none';
-
-    const toolRow = document.getElementById('toolCompass');
-    if (toolRow) toolRow.style.display = 'none';
-  }
-})();
-
 // [BHH: COMPASS END]
-
-
-
 
 
 /*******************
