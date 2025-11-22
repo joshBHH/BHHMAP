@@ -152,6 +152,89 @@ function restoreDraw(){
 }
 restoreDraw();
 
+// [BHH: DRAW – CONTROLS START]
+let activeDrawHandler = null;
+
+function ensureDrawPlugin(){
+  if (!L.Draw || !L.Draw.Polyline) {
+    alert('Drawing tools not available (Leaflet.draw not loaded).');
+    return false;
+  }
+  return true;
+}
+
+function startDraw(shapeType){
+  if (!ensureDrawPlugin()) return;
+
+  // Disable any previous drawing session
+  if (activeDrawHandler) {
+    activeDrawHandler.disable();
+    activeDrawHandler = null;
+  }
+
+  const baseOpts = {
+    shapeOptions: {
+      color: '#f97316',
+      weight: 3,
+      opacity: 0.9
+    }
+  };
+
+  switch (shapeType) {
+    case 'line':
+      activeDrawHandler = new L.Draw.Polyline(map, baseOpts);
+      break;
+    case 'polygon':
+      activeDrawHandler = new L.Draw.Polygon(map, baseOpts);
+      break;
+    case 'rectangle':
+      activeDrawHandler = new L.Draw.Rectangle(map, baseOpts);
+      break;
+    case 'circle':
+      activeDrawHandler = new L.Draw.Circle(map, {
+        shapeOptions: baseOpts.shapeOptions
+      });
+      break;
+    default:
+      return;
+  }
+
+  activeDrawHandler.enable();
+}
+
+// When a shape is finished, add it to drawnItems + save
+map.on(L.Draw.Event.CREATED, function (e) {
+  const layer = e.layer;
+  drawnItems.addLayer(layer);
+
+  // Distance labels for polylines
+  if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+    labelPolylineSegments(layer);
+    updatePolylineTotalLabel(layer);
+  }
+
+  saveDraw();
+
+  // Stop drawing after one shape
+  if (activeDrawHandler) {
+    activeDrawHandler.disable();
+    activeDrawHandler = null;
+  }
+});
+
+// Wire buttons in the Tools sheet
+const drawLineBtn    = document.getElementById('drawLineBtn');
+const drawPolygonBtn = document.getElementById('drawPolygonBtn');
+const drawRectBtn    = document.getElementById('drawRectBtn');
+const drawCircleBtn  = document.getElementById('drawCircleBtn');
+
+if (drawLineBtn)    drawLineBtn.onclick    = () => startDraw('line');
+if (drawPolygonBtn) drawPolygonBtn.onclick = () => startDraw('polygon');
+if (drawRectBtn)    drawRectBtn.onclick    = () => startDraw('rectangle');
+if (drawCircleBtn)  drawCircleBtn.onclick  = () => startDraw('circle');
+// [BHH: DRAW – CONTROLS END]
+
+
 // distance labels for polylines
 function fmtFeetMiles(m){
   const ft = m * 3.28084;
