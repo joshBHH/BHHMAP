@@ -455,12 +455,12 @@ body,
   user-select: none;
 }
 
-.compass-label.n { top: 4px;  left: 50%; transform: translateX(-50%); }
+.compass-label.n { top: 4px;    left: 50%; transform: translateX(-50%); }
 .compass-label.s { bottom: 4px; left: 50%; transform: translateX(-50%); }
-.compass-label.e { right: 4px; top: 50%; transform: translateY(-50%); }
-.compass-label.w { left: 4px;  top: 50%; transform: translateY(-50%); }
+.compass-label.e { right: 4px;  top: 50%;  transform: translateY(-50%); }
+.compass-label.w { left: 4px;   top: 50%;  transform: translateY(-50%); }
 
-/* Needle: tip points UP at 0°; base is in the center of the ring */
+/* Needle: tip points UP at 0°; base sits at center of ring */
 .compass-needle {
   position: absolute;
   left: 50%;
@@ -475,15 +475,13 @@ body,
   filter: drop-shadow(0 1px 3px rgba(0,0,0,.8));
 }
 
-/* Hide compass UI on desktop / fine-pointer devices */
+/* Hide compass UI on desktop / mouse devices */
 @media (pointer: fine) {
   #compassWidget,
   #toolCompass {
     display: none;
   }
 }
-
-
 
 
 /* [BHH: STYLES END] */
