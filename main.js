@@ -811,19 +811,207 @@ async function startCompass(){
   }
 
   window.addEventListener(eventType, onDeviceOrientation, true);
+/*******************
+ * COMPASS + BEARING
+ *******************/
+// [BHH: COMPASS START]
+const compHeadingText   = document.getElementById('compHeadingText');
+const compTargetSel     = document.getElementById('compTarget');
+const compAnchorRadios  = Array.from(document.querySelectorAll('input[name="compAnchor"]'));
+const compDist          = document.getElementById('compDist');
+const compBear          = document.getElementById('compBear');
+const compEnableBtn     = document.getElementById('compEnable'); // button in sheet (backup)
 
-  // Keep origin updated via GPS (so guide line behaves)
+let deviceHeading = null;
+let guideTargetId = localStorage.getItem('guide_target') || '';
+const guideLine   = L.polyline([], {
+  color:'#fdae6b',
+  weight:3,
+  dashArray:'6,6'
+}).addTo(map);
+
+function toRad2(x){ return x * Math.PI / 180; }
+function toDeg2(x){ return x * 180 / Math.PI; }
+
+function bearingDeg(a, b){
+  const y =
+    Math.sin(toRad2(b.lng - a.lng)) *
+    Math.cos(toRad2(b.lat));
+
+  const x =
+    Math.cos(toRad2(a.lat)) * Math.sin(toRad2(b.lat)) -
+    Math.sin(toRad2(a.lat)) * Math.cos(toRad2(b.lat)) *
+    Math.cos(toRad2(b.lng - a.lng));
+
+  return (toDeg2(Math.atan2(y, x)) + 360) % 360;
+}
+
+function rebuildCompassTargets(){
+  const wps = [];
+  markersLayer.eachLayer(m => {
+    const { lat, lng } = m.getLatLng();
+    wps.push({
+      id:   m.options.id,
+      name: m.options.name || 'Unnamed',
+      type: m.options.type || 'marker',
+      lat,
+      lng,
+      layer: m
+    });
+  });
+
+  const opts = ['<option value="">(none)</option>']
+    .concat(
+      wps.map(w =>
+        `<option value="${w.id}">${w.name} — ${w.type}</option>`
+      )
+    );
+
+  compTargetSel.innerHTML = opts.join('');
+  if (guideTargetId) compTargetSel.value = guideTargetId;
+}
+
+function updateCompassDial(){
+  const needle = document.getElementById('compassNeedle');
+  if (!needle) return;
+
+  const h = deviceHeading;
+  const rotation = (h == null ? 0 : h); // 0° = tip up (N), 90° = E, etc.
+
+  needle.style.transform =
+    'translate(-50%, -100%) rotate(' + rotation + 'deg)';
+}
+
+function setGuideTarget(id){
+  guideTargetId = id || '';
+  localStorage.setItem('guide_target', guideTargetId);
+  rebuildCompassTargets();
+  updateGuideLine();
+}
+
+if (compTargetSel) {
+  compTargetSel.addEventListener('change', () => {
+    setGuideTarget(compTargetSel.value);
+  });
+}
+
+function compOrigin(){
+  const mode = (compAnchorRadios.find(r => r.checked) || {}).value || 'gps';
+  if (mode === 'gps' && lastGPS) {
+    return L.latLng(lastGPS.lat, lastGPS.lng);
+  }
+  return map.getCenter();
+}
+
+function updateGuideLine(){
+  const origin = compOrigin();
+
+  if (!guideTargetId) {
+    guideLine.setLatLngs([]);
+    compDist.textContent = '--';
+    compBear.textContent = '--';
+    return;
+  }
+
+  let targetMarker = null;
+  markersLayer.eachLayer(m => {
+    if (m.options.id === guideTargetId) targetMarker = m;
+  });
+
+  if (!targetMarker) {
+    guideLine.setLatLngs([]);
+    compDist.textContent = '--';
+    compBear.textContent = '--';
+    return;
+  }
+
+  const target = targetMarker.getLatLng();
+  guideLine.setLatLngs([origin, target]);
+
+  const d = map.distance(origin, target);
+  compDist.textContent =
+    d >= 1609.344
+      ? (d / 1609.344).toFixed(2) + ' mi'
+      : Math.round(d * 3.28084) + ' ft';
+
+  const brg  = bearingDeg(origin, target);
+  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+  const card = dirs[Math.round(brg / 45) % 8];
+  compBear.textContent = Math.round(brg) + '° ' + card;
+}
+
+function updateCompassReadout(){
+  const h = deviceHeading;
+
+  if (h == null) {
+    compHeadingText.textContent = 'Heading: --';
+  } else {
+    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    const card = dirs[Math.round(h / 45) % 8];
+    compHeadingText.textContent =
+      'Heading: ' + Math.round(h) + '° ' + card;
+  }
+
+  updateGuideLine();
+  updateCompassDial();
+}
+
+function onDeviceOrientation(e){
+  let hdg = null;
+
+  // iOS Safari gives webkitCompassHeading (0° = North, clockwise)
+  if (typeof e.webkitCompassHeading === 'number') {
+    hdg = e.webkitCompassHeading;
+  } else if (typeof e.alpha === 'number') {
+    // Generic browsers: alpha is 0–360 clockwise from some reference.
+    // We invert so 0° ≈ North style.
+    hdg = (360 - e.alpha) % 360;
+  }
+
+  if (hdg == null || isNaN(hdg)) return;
+
+  // === SIMPLE FIX: your device is globally 180° off, so flip it. ===
+  hdg = (hdg + 180) % 360;
+
+  deviceHeading = hdg;
+  updateCompassReadout();
+}
+
+async function startCompass(){
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== 'granted') {
+        compHeadingText.textContent = 'Heading: permission denied';
+        return;
+      }
+    }
+  } catch (_) {
+    // Non-iOS: ignore
+  }
+
+  if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
+  } else if ('ondeviceorientation' in window) {
+    window.addEventListener('deviceorientation', onDeviceOrientation, true);
+  } else {
+    compHeadingText.textContent = 'Heading: not supported';
+    return;
+  }
+
+  // Keep origin updated for guide line
   if (navigator.geolocation && !gpsWatchId) {
     ensureGPSWatch(false);
   }
 }
 
-// Auto-start compass on touch / coarse-pointer devices (phones, most tablets)
+// Auto-start on touch devices
 if (window.matchMedia('(pointer: coarse)').matches) {
   startCompass();
 }
 
-// Backup: button in the Compass sheet can also trigger it
+// Backup: "Enable Compass" button in sheet
 if (compEnableBtn) {
   compEnableBtn.addEventListener('click', startCompass);
 }
@@ -835,7 +1023,7 @@ map.on('moveend', () => {
   if (mode === 'center') updateGuideLine();
 });
 
-// Build initial target list once on load
+// Build the initial targets list
 rebuildCompassTargets();
 // [BHH: COMPASS END]
 
