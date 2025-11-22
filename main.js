@@ -1764,10 +1764,10 @@ function updateGuideLine(){
       : Math.round(d * 3.28084) + ' ft';
 
   const brg  = bearingDeg(origin, target);
-  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
-  const card = dirs[Math.round(brg / 45) % 8;
-  compBear.textContent = Math.round(brg) + '° ' + card;
-}
+const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+const card = dirs[Math.round(brg / 45) % 8];
+compBear.textContent = Math.round(brg) + '° ' + card;
+
 
 // --- Dial / readout ---
 function updateCompassDial(){
