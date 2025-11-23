@@ -1158,16 +1158,27 @@ function defaultName(type) {
   return `${base} ${n}`;
 }
 
-function markerPopupHTML(m) {
-  const cfg = markerTypes[m.options.type] || { label: 'Marker' };
+function markerPopupHTML(m){
+  const cfg = markerTypes[m.options.type] || {label:'Marker'};
   const img = m.options.photo
     ? `<div style="margin-top:6px"><img src="${m.options.photo}" alt="photo" style="max-width:160px;border-radius:8px;border:1px solid #203325"/></div>`
     : '';
   const notes = m.options.notes
-    ? `<div class="tag" style="margin-top:6px">${m.options.notes.replace(/</g, '&lt;')}</div>`
+    ? `<div class="tag" style="margin-top:6px">${m.options.notes.replace(/</g,'&lt;')}</div>`
     : '';
-  return `<b>${m.options.name}</b><div class="tag">${cfg.label}</div>${img}${notes}<div style="margin-top:8px"><button class="del">Delete</button></div>`;
+
+  return `
+    <b>${m.options.name}</b>
+    <div class="tag">${cfg.label}</div>
+    ${img}
+    ${notes}
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="edit">Edit</button>
+      <button class="del">Delete</button>
+    </div>
+  `;
 }
+
 
 function addMarker(latlng, type, name, id, notes, photo) {
   const cfg = markerTypes[type] || { label: 'Marker', icon: makePinIcon('default') };
@@ -1195,16 +1206,27 @@ function addMarker(latlng, type, name, id, notes, photo) {
       refreshWaypointsUI();
     }
   });
-  m.on('popupopen', (e) => {
-    const btn = e.popup.getElement().querySelector('button.del');
-    if (btn) {
-      btn.addEventListener('click', () => {
+    m.on('popupopen', (e)=>{
+    const root = e.popup.getElement();
+    if (!root) return;
+
+    const btnDel = root.querySelector('button.del');
+    if (btnDel){
+      btnDel.addEventListener('click', ()=>{
         markersLayer.removeLayer(m);
         saveMarkers();
         refreshWaypointsUI();
       });
     }
+
+    const btnEdit = root.querySelector('button.edit');
+    if (btnEdit){
+      btnEdit.addEventListener('click', ()=>{
+        openWaypointDetail(m);
+      });
+    }
   });
+
 
   markersLayer.addLayer(m);
   saveMarkers();
@@ -2441,7 +2463,9 @@ function refreshWaypointsUI() {
           <div class="emoji">${emojiFor(w)}</div>
           <div class="name">
             <input type="text"
-                   value="${(w.name || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"/>
+       style="max-width: 160px; width: 100%;"
+       value="${(w.name || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"/>
+
             ${meta}
           </div>
           <div class="actions"><button class="btn fly">Fly</button></div>
