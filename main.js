@@ -2281,6 +2281,16 @@ ovlTrack.onchange =
 const wpList = document.getElementById('wpList');
 const wpSearch = document.getElementById('wpSearch');
 const wpType = document.getElementById('wpType');
+const wpTypePreview = document.getElementById('wpTypePreview');
+
+if (wpType && wpTypePreview){
+  const syncTypePreview = () => {
+    wpTypePreview.innerHTML = pinHTML(wpType.value || 'stand');
+  };
+  wpType.addEventListener('change', syncTypePreview);
+  syncTypePreview();
+}
+
 const wpName = document.getElementById('wpName');
 
 const wpAddCenterBtn = document.getElementById('wpAddCenter');
