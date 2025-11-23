@@ -492,7 +492,26 @@ body,
   }
 }
 
-/* Waypoint pin icons (OnX-style) */
+/* Waypoint pin icons*/
+/* Global style for all waypoint pins */
+.wp-pin {
+  /* Defaults – user-changeable */
+  --wp-pin-fill: rgba(15, 23, 42, 0.96);  /* dark slate background */
+  --wp-pin-stroke: #020617;               /* pin outline */
+  --wp-pin-icon: #f97316;                 /* ORANGE icon by default */
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* helps them pop on busy satellite imagery */
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.7));
+}
+.wp-pin .wp-svg {
+  width: 100%;
+  height: 100%;
+}
+
 .wp-pin {
   width: 32px;
   height: 32px;
