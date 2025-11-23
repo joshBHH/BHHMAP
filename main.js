@@ -973,91 +973,114 @@ const ICON_SVGS = {
     </svg>
   `,
 
-    buck: `
+      buck: `
     <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- Back / belly -->
-      <path d="M5 15.2 Q8 12.2 12 12.2 Q16 12.2 19 15.2"
-        fill="none"
-        stroke="var(--wp-pin-icon)"
-        stroke-width="1.9"
-        stroke-linecap="round"
-        stroke-linejoin="round" />
-      <!-- Chest / neck / head -->
-      <path d="M12 12.2 L13.4 9.8 Q14.1 8.5 13.6 7.6
-               Q13.1 6.8 12.1 6.8 L10.6 6.9"
-        fill="none"
-        stroke="var(--wp-pin-icon)"
-        stroke-width="1.9"
-        stroke-linecap="round"
-        stroke-linejoin="round" />
-      <!-- Nose -->
-      <circle cx="10.3" cy="6.9" r="0.45"
+      <!-- Body (side profile) -->
+      <path d="M4.5 15.5
+               Q 8 12.2 12 12.2
+               Q 16 12.2 19.5 15.5
+               L 18.4 16.8
+               Q 15.3 14.2 12 14.2
+               Q 8.7 14.2 5.6 16.8
+               Z"
         fill="var(--wp-pin-icon)" />
-      <!-- Antlers (clear forked shape) -->
-      <path d="M12.4 6.9 L13.8 5.2
-               M12.7 7.4 L14.3 5.5
-               M13.3 7.0 L14.8 5.0
-               M11.7 6.6 L10.7 4.9
-               M11.3 7.1 L10.1 5.2"
+
+      <!-- Neck -->
+      <path d="M11.2 12.2 L12.2 9.8 L13.4 9.2 L13.6 10.8 L12.9 12.4 Z"
+        fill="var(--wp-pin-icon)" />
+
+      <!-- Head -->
+      <path d="M13.4 9.2
+               Q 14.8 8.8 15.6 8.0
+               Q 16.4 7.1 15.9 6.4
+               Q 15.3 5.7 14.1 5.9
+               Q 13.0 6.1 12.2 6.7
+               Q 11.4 7.3 11.2 8.0
+               Z"
+        fill="var(--wp-pin-icon)" />
+
+      <!-- Antlers (strong silhouette) -->
+      <path d="M13.4 6.3
+               L 14.8 4.2
+               M14.0 6.7
+               L 15.6 4.5
+               M12.6 6.0
+               L 11.4 4.1
+               M12.0 6.5
+               L 10.8 4.6"
         fill="none"
         stroke="var(--wp-pin-icon)"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round" />
-      <!-- Front leg -->
-      <line x1="10.5" y1="12.7" x2="10.5" y2="18"
-        stroke="var(--wp-pin-icon)"
-        stroke-width="1.7"
+        stroke-width="1.4"
         stroke-linecap="round" />
-      <!-- Rear leg -->
-      <line x1="14.8" y1="12.7" x2="14.8" y2="18"
+
+      <!-- Front leg -->
+      <path d="M10.4 14.2 L10.4 18.2"
+        fill="none"
         stroke="var(--wp-pin-icon)"
-        stroke-width="1.7"
+        stroke-width="1.8"
+        stroke-linecap="round" />
+
+      <!-- Rear leg -->
+      <path d="M14.7 14.2 L14.7 18.2"
+        fill="none"
+        stroke="var(--wp-pin-icon)"
+        stroke-width="1.8"
         stroke-linecap="round" />
     </svg>
   `,
 
 
-    doe: `
+
+      doe: `
     <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- Back / belly (same proportions as buck) -->
-      <path d="M5.2 15.4 Q8.2 12.4 12 12.4 Q15.8 12.4 18.8 15.4"
-        fill="none"
-        stroke="var(--wp-pin-icon)"
-        stroke-width="1.9"
-        stroke-linecap="round"
-        stroke-linejoin="round" />
-      <!-- Neck / head (no antlers, softer lines) -->
-      <path d="M12 12.4 L13.1 10.1
-               Q13.7 9.0 13.1 8.2
-               Q12.6 7.5 11.6 7.5 L10.2 7.5
-               Q9.4 7.5 8.9 7.9"
-        fill="none"
-        stroke="var(--wp-pin-icon)"
-        stroke-width="1.9"
-        stroke-linecap="round"
-        stroke-linejoin="round" />
+      <!-- Body (same basic shape as buck for consistency) -->
+      <path d="M4.7 15.7
+               Q 8.1 12.5 12 12.5
+               Q 15.9 12.5 19.3 15.7
+               L 18.2 16.9
+               Q 15.2 14.4 12 14.4
+               Q 8.8 14.4 5.8 16.9
+               Z"
+        fill="var(--wp-pin-icon)" />
+
+      <!-- Neck -->
+      <path d="M11.4 12.5 L12.5 10.2 L13.4 9.7 L13.6 11.0 L12.9 12.6 Z"
+        fill="var(--wp-pin-icon)" />
+
+      <!-- Head (no antlers, softer face) -->
+      <path d="M13.4 9.7
+               Q 14.6 9.3 15.4 8.6
+               Q 16.3 7.8 16.0 7.1
+               Q 15.6 6.4 14.5 6.3
+               Q 13.4 6.3 12.5 6.8
+               Q 11.7 7.3 11.4 8.1
+               Z"
+        fill="var(--wp-pin-icon)" />
+
       <!-- Ear -->
-      <path d="M11.0 7.1 L10.0 6.1"
+      <path d="M12.6 6.7 L11.4 5.4 L11.2 6.5 Z"
+        fill="var(--wp-pin-icon)" />
+
+      <!-- Eye -->
+      <circle cx="14.1" cy="7.7" r="0.35"
+        fill="#0b1a0f" />
+
+      <!-- Front leg -->
+      <path d="M10.5 14.4 L10.5 18.2"
         fill="none"
         stroke="var(--wp-pin-icon)"
-        stroke-width="1.5"
+        stroke-width="1.8"
         stroke-linecap="round" />
-      <!-- Eye -->
-      <circle cx="11.7" cy="7.9" r="0.4"
-        fill="var(--wp-pin-icon)" />
-      <!-- Front leg -->
-      <line x1="10.5" y1="12.9" x2="10.5" y2="18"
-        stroke="var(--wp-pin-icon)"
-        stroke-width="1.7"
-        stroke-linecap="round" />
+
       <!-- Rear leg -->
-      <line x1="14.6" y1="12.9" x2="14.6" y2="18"
+      <path d="M14.6 14.4 L14.6 18.2"
+        fill="none"
         stroke="var(--wp-pin-icon)"
-        stroke-width="1.7"
+        stroke-width="1.8"
         stroke-linecap="round" />
     </svg>
   `,
+
 
 
   blood: `
