@@ -940,165 +940,253 @@ const STORAGE_MARK = 'bhh_markers_v5';
 
 // mobile vs desktop pin size
 const IS_MOBILE = matchMedia('(max-width:640px)').matches;
-const PIN_SZ = IS_MOBILE ? 30 : 34;
+// Slightly larger pins so they stay readable at all zoom levels
+const PIN_SZ    = IS_MOBILE ? 38 : 46;
 
-// Simple pin shell + inner pictograms (all monochrome, currentColor)
+
+// Pin SVGs use CSS variables so user can recolor via CSS.
+// --wp-pin-fill:   pin background
+// --wp-pin-stroke: pin outline
+// --wp-pin-icon:   pictogram color
 const ICON_SVGS = {};
+
 function makePinSVG(inner){
   return `
     <svg viewBox="0 0 32 32" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- outer pin -->
+      <!-- single teardrop pin shape (no inner circle) -->
       <path d="M16 2.5c-5 0-9 4-9 9 0 6.2 7.8 13.9 8.9 15.1.4.4 1 .4 1.4 0C17.4 25.4 25 17 25 11.5c0-5-4-9-9-9z"
-            fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- inner ring -->
-      <circle cx="16" cy="12" r="6.5"
-              fill="none" stroke="currentColor" stroke-width="1.5"/>
+            fill="var(--wp-pin-fill, rgba(15,23,42,0.96))"
+            stroke="var(--wp-pin-stroke, #020617)"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
       ${inner}
     </svg>
   `;
 }
 
+// DEFAULT
 ICON_SVGS.default = makePinSVG(`
-  <circle cx="16" cy="12" r="3" />
+  <circle cx="16" cy="12" r="3"
+          fill="none"
+          stroke="var(--wp-pin-icon, #f97316)"
+          stroke-width="2" />
 `);
 
+// BUCK
 ICON_SVGS.buck = makePinSVG(`
-  <!-- deer body -->
-  <path d="M12 15.5c0 1.9 1.7 3.5 4 3.5 2.3 0 4-1.6 4-3.5"
-        fill="none" stroke="currentColor" stroke-width="1.7"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- head -->
-  <path d="M14.3 13.5c0-1.1.9-2 2-2 1 0 1.7.7 1.9 1.6"
-        fill="none" stroke="currentColor" stroke-width="1.5"
+  <path d="M12 16c0 2 1.9 3.8 4 3.8s4-1.8 4-3.8"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <path d="M14.2 13.6c0-1.2.9-2.1 2-2.1 1 0 1.9.7 2 1.8"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.8"
         stroke-linecap="round"/>
-  <!-- antlers -->
-  <path d="M16 10.5l-1.8-1.6M16 10.5l1.8-1.6
-           M14.2 8.9L13 7.8M17.8 8.9L19 7.8"
-        fill="none" stroke="currentColor" stroke-width="1.4"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 10.4l-1.7-1.4M16 10.4l1.7-1.4
+           M14.3 9L13.1 7.9M17.7 9L18.9 7.9"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
 `);
 
+// DOE
 ICON_SVGS.doe = makePinSVG(`
-  <!-- body -->
-  <path d="M12 15.5c0 1.9 1.7 3.5 4 3.5 2.3 0 4-1.6 4-3.5"
-        fill="none" stroke="currentColor" stroke-width="1.7"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- head / ears -->
-  <path d="M14.5 13.3c0-1 0.8-1.8 1.8-1.8 1 0 1.8.8 1.8 1.8
-           M15.3 11.5l-1-.9M18.7 11.5l1-.9"
-        fill="none" stroke="currentColor" stroke-width="1.4"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12 16c0 2 1.9 3.8 4 3.8s4-1.8 4-3.8"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <path d="M14.4 13.4c.1-1 .9-1.9 1.8-1.9 1 0 1.7.8 1.9 1.8"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.8"
+        stroke-linecap="round"/>
+  <path d="M15.3 11.3l-1.1-1M18.7 11.3l1.1-1"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
 `);
 
+// BLOOD
 ICON_SVGS.blood = makePinSVG(`
-  <path d="M12.5 8.4l-1.4 2.4a2 2 0 0 0 3.4 0z" />
-  <path d="M16 7.4l-1.4 2.4a2 2 0 0 0 3.4 0z" />
-  <path d="M19.5 8.4l-1.4 2.4a2 2 0 0 0 3.4 0z" />
+  <path d="M12.6 8.7l-1.5 2.6a2.1 2.1 0 0 0 3.6 0z"
+        fill="var(--wp-pin-icon, #f97316)"/>
+  <path d="M16 7.8l-1.5 2.6a2.1 2.1 0 0 0 3.6 0z"
+        fill="var(--wp-pin-icon, #f97316)"/>
+  <path d="M19.4 8.7l-1.5 2.6a2.1 2.1 0 0 0 3.6 0z"
+        fill="var(--wp-pin-icon, #f97316)"/>
 `);
 
+// TRAIL
 ICON_SVGS.trail = makePinSVG(`
-  <!-- hoof prints style -->
-  <ellipse cx="13" cy="11" rx="1.2" ry="2" />
-  <ellipse cx="19" cy="13" rx="1.2" ry="2" />
-  <path d="M12 16c1.5-.8 2.7-1 4-1s2.5.2 3.6.8"
-        fill="none" stroke="currentColor" stroke-width="1.5"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="13" cy="11" rx="1.2" ry="2.1"
+           fill="none"
+           stroke="var(--wp-pin-icon, #f97316)"
+           stroke-width="1.7"/>
+  <ellipse cx="19" cy="13" rx="1.2" ry="2.1"
+           fill="none"
+           stroke="var(--wp-pin-icon, #f97316)"
+           stroke-width="1.7"/>
+  <path d="M12 16.3c1.6-.9 3-1.2 4.7-1.2 1.4 0 2.6.2 3.6.6"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.8"
+        stroke-linecap="round"/>
 `);
 
+// STAND
 ICON_SVGS.stand = makePinSVG(`
-  <!-- stand platform -->
-  <rect x="12" y="9" width="8" height="4" rx="0.8" ry="0.8" />
-  <!-- legs / rungs -->
+  <rect x="12.2" y="9" width="7.8" height="4"
+        rx="0.9" ry="0.9"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.8"/>
   <line x1="14" y1="13" x2="14" y2="17"
-        stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.7" stroke-linecap="round"/>
   <line x1="18" y1="13" x2="18" y2="17"
-        stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.7" stroke-linecap="round"/>
   <line x1="14" y1="14.2" x2="18" y2="14.2"
-        stroke="currentColor" stroke-width="1.2"/>
+        stroke="var(--wp-pin-icon, #f97316)" stroke-width="1.3"/>
   <line x1="14" y1="15.7" x2="18" y2="15.7"
-        stroke="currentColor" stroke-width="1.2"/>
+        stroke="var(--wp-pin-icon, #f97316)" stroke-width="1.3"/>
 `);
 
+// BLIND
 ICON_SVGS.blind = makePinSVG(`
-  <!-- simple box blind -->
-  <rect x="11" y="9" width="10" height="7" rx="1.4" ry="1.4"/>
-  <rect x="13" y="11" width="6" height="2" fill="#ffffff"/>
+  <rect x="11.5" y="9.3" width="9.5" height="6.8"
+        rx="1.4" ry="1.4"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.8"/>
+  <rect x="13.5" y="11" width="5.5" height="2.2"
+        fill="var(--wp-pin-fill, rgba(15,23,42,0.96))"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.2"/>
 `);
 
+// SCRAPE
 ICON_SVGS.scrape = makePinSVG(`
-  <!-- disturbed ground -->
-  <path d="M12 16.2c1.6-.9 3-1.2 4.7-1.2 1.3 0 2.4.2 3.3.5"
-        fill="none" stroke="currentColor" stroke-width="1.7"
+  <path d="M12 16.5c1.6-.9 3-1.2 4.7-1.2 1.3 0 2.4.2 3.3.5"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="2"
         stroke-linecap="round"/>
-  <!-- little twig / licking branch -->
-  <path d="M15.5 10.5v4.2M15.5 11l-1.4-1M15.5 11.6l1.6-1.1"
-        fill="none" stroke="currentColor" stroke-width="1.4"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M15.5 10.3v4.2M15.5 11l-1.5-1.1M15.5 11.6l1.7-1.2"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
 `);
 
+// RUB
 ICON_SVGS.rub = makePinSVG(`
-  <!-- rubbed tree -->
-  <rect x="15" y="9" width="2.4" height="7.8" rx="1" />
-  <!-- scratch marks -->
-  <path d="M14.3 10.3l-1.1.9M14.3 12l-1.1.9M18.7 10.3l1.1.9M18.7 12l1.1.9"
-        fill="none" stroke="#ffffff" stroke-width="1.2"
+  <rect x="15" y="9.1" width="2.5" height="7.8" rx="1.1"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.8"/>
+  <path d="M14.2 10.4l-1.2.9M14.2 12.1l-1.2.9
+           M18.8 10.4l1.2.9M18.8 12.1l1.2.9"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.6"
         stroke-linecap="round"/>
 `);
 
+// CAMERA
 ICON_SVGS.camera = makePinSVG(`
-  <rect x="11.5" y="9.5" width="9" height="5.5" rx="1.2" />
-  <circle cx="16" cy="12.2" r="1.8" fill="#ffffff"/>
-  <circle cx="16" cy="12.2" r="1.1" />
-  <circle cx="13" cy="10.8" r="0.7" />
+  <rect x="11.5" y="9.4" width="9.2" height="5.8"
+        rx="1.3" ry="1.3"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.8"/>
+  <circle cx="16" cy="12.3" r="1.9"
+          fill="var(--wp-pin-fill, rgba(15,23,42,0.96))"
+          stroke="var(--wp-pin-icon, #f97316)"
+          stroke-width="1.4"/>
+  <circle cx="13" cy="10.7" r="0.7"
+          fill="var(--wp-pin-icon, #f97316)"/>
 `);
 
+// FOOD
 ICON_SVGS.food = makePinSVG(`
-  <!-- stalk -->
-  <path d="M16 10.5v5.5" fill="none" stroke="currentColor"
-        stroke-width="1.5" stroke-linecap="round"/>
-  <!-- leaves -->
-  <path d="M16 11.2c-1.4-1.2-2.9-1.4-4.4-.8
-           0 1.4 1.2 2.4 2.8 2.5
-           M16 11.2c1.4-1.2 2.9-1.4 4.4-.8
-           0 1.4-1.2 2.4-2.8 2.5"
-        fill="none" stroke="currentColor" stroke-width="1.4"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 10.3v5.7"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.8"
+        stroke-linecap="round"/>
+  <path d="M16 11.2c-1.5-1.2-3-1.5-4.6-.9
+           0 1.5 1.3 2.6 2.9 2.7
+           M16 11.2c1.5-1.2 3-1.5 4.6-.9
+           0 1.5-1.3 2.6-2.9 2.7"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
 `);
 
+// WATER
 ICON_SVGS.water = makePinSVG(`
-  <path d="M16 8.3c-1.6 1.9-3 3.7-3 5.4a3 3 0 0 0 6 0c0-1.7-1.4-3.5-3-5.4z" />
+  <path d="M16 8.2c-1.8 2-3.2 3.8-3.2 5.7a3.2 3.2 0 0 0 6.4 0c0-1.9-1.4-3.7-3.2-5.7z"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="1.9"/>
 `);
 
+// CAMP
 ICON_SVGS.camp = makePinSVG(`
-  <path d="M10.5 16.5L16 10l5.5 6.5z"
-        fill="none" stroke="currentColor" stroke-width="1.7"
+  <path d="M10.5 16.6L16 10.2l5.5 6.4z"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="2"
         stroke-linejoin="round"/>
-  <line x1="14.2" y1="16.5" x2="17.8" y2="16.5"
-        stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+  <line x1="14.2" y1="16.6" x2="17.8" y2="16.6"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="2"
+        stroke-linecap="round"/>
 `);
 
+// TRUCK / PARKING
 ICON_SVGS.truck = makePinSVG(`
-  <!-- parking P -->
-  <path d="M14 9.5h3a2 2 0 0 1 0 4h-1.5v3"
-        fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M14 9.6h3a2.1 2.1 0 0 1 0 4.2h-1.6v3"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
 `);
 
+// HAZARD
 ICON_SVGS.hazard = makePinSVG(`
-  <path d="M13 9h6l-3 7z"
-        fill="none" stroke="currentColor" stroke-width="1.8"
+  <path d="M13 9.3h6L16 16z"
+        fill="none"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="2"
         stroke-linejoin="round"/>
-  <line x1="16" y1="11" x2="16" y2="14"
-        stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-  <circle cx="16" cy="15.4" r="0.8" />
+  <line x1="16" y1="11.1" x2="16" y2="14"
+        stroke="var(--wp-pin-icon, #f97316)"
+        stroke-width="2"
+        stroke-linecap="round"/>
+  <circle cx="16" cy="15.4" r="0.8"
+          fill="var(--wp-pin-icon, #f97316)"/>
 `);
 
 // Build a pin HTML snippet we can reuse (map + waypoints list)
 function pinHTML(type){
   const key = ICON_SVGS[type] ? type : 'default';
-  const svg = ICON_SVGS[key];
-  return `<div class="wp-pin wp-${key}">${svg}</div>`;
+  return `<div class="wp-pin wp-${key}">${ICON_SVGS[key]}</div>`;
 }
 
 // Build Leaflet icon from the same HTML
@@ -1129,6 +1217,7 @@ const markerTypes = {
   truck:  { label:'Truck / Parking', icon: makePinIcon('truck')  },
   hazard: { label:'Hazard',          icon: makePinIcon('hazard') }
 };
+
 
 
 let activeType = null;
