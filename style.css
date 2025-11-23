@@ -241,34 +241,6 @@ body,
   background: #331616;
 }
 
-/* Waypoints list */
-.wp-list {
-  max-height: 38vh;
-  overflow: auto;
-  margin-top: 6px;
-}
-
-.item {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
-  gap: 10px;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #1d3323;
-}
-
-.emoji {
-  font-size: 18px;
-}
-
-.name {
-  min-width: 0;
-}
-
-.actions button {
-  margin-left: 8px;
-}
-
 /* Segment / total distance labels */
 .seglabel {
   background: rgba(16, 31, 20, 0.92);
@@ -492,61 +464,33 @@ body,
   }
 }
 
-/* Waypoint pin icons*/
-/* Global style for all waypoint pins */
-.wp-pin {
-  /* Defaults – user-changeable */
-  --wp-pin-fill: rgba(15, 23, 42, 0.96);  /* dark slate background */
-  --wp-pin-stroke: #020617;               /* pin outline */
-  --wp-pin-icon: #f97316;                 /* ORANGE icon by default */
+/* Waypoint pin icons – match new SVG-only markers */
+/* The JS sets iconSize; these fill that box 100% */
 
+.wp-pin {
+  --wp-pin-icon: #f97316;       /* default icon color (user-changeable) */
+
+  width: 100%;
+  height: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  /* helps them pop on busy satellite imagery */
-  filter: drop-shadow(0 0 4px rgba(0,0,0,0.7));
+  /* pop on busy satellite imagery */
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.75));
 }
+
 .wp-pin .wp-svg {
   width: 100%;
   height: 100%;
 }
 
-.wp-pin {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid #111827;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* scale slightly on mobile */
-@media (max-width: 640px) {
-  .wp-pin {
-    width: 30px;
-    height: 30px;
-  }
-}
-
-/* Inner SVG icon */
-.wp-pin .wp-svg {
-  width: 18px;
-  height: 18px;
-  display: block;
-  fill: #111827;
-  stroke: #111827;
-}
-
-/* A little color language per type (optional) */
-.wp-pin.wp-blood { border-color: #b91c1c; }
-.wp-pin.wp-hazard { border-color: #f97316; }
-.wp-pin.wp-water { border-color: #2563eb; }
+/* Per-type color accents (using the CSS variable the SVGs read) */
+.wp-pin.wp-blood  { --wp-pin-icon: #ef4444; }  /* red */
+.wp-pin.wp-hazard { --wp-pin-icon: #f97316; }  /* bright orange */
+.wp-pin.wp-water  { --wp-pin-icon: #22c55e; }  /* teal/green for water */
 .wp-pin.wp-camp,
-.wp-pin.wp-truck { border-color: #4b5563; }
+.wp-pin.wp-truck  { --wp-pin-icon: #e5e7eb; }  /* light neutral */
 .wp-pin.wp-buck,
 .wp-pin.wp-doe,
 .wp-pin.wp-stand,
@@ -555,71 +499,100 @@ body,
 .wp-pin.wp-rub,
 .wp-pin.wp-trail,
 .wp-pin.wp-camera,
-.wp-pin.wp-food {
-  border-color: #15803d;
+.wp-pin.wp-food   { --wp-pin-icon: #f97316; }  /* hunting orange */
+
+/* Waypoints list (matches new main.js markup) */
+.wp-list {
+  max-height: 38vh;
+  overflow: auto;
+  margin-top: 6px;
 }
 
-/* Waypoints sheet layout */
-#waypointsSheet .item {
-  display: flex;
-  align-items: flex-start;
+/* One row: [icon] [name/meta] [buttons] */
+#wpList .item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   gap: 8px;
+  align-items: center;
   padding: 6px 0;
+  border-bottom: 1px solid #1d3323;
 }
 
-#waypointsSheet .icon-cell {
-  flex: 0 0 40px;
+/* icon cell */
+#wpList .wp-item-icon {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-#waypointsSheet .icon-cell .wp-pin {
-  width: 32px;
-  height: 32px;
+/* shapes (lines / areas) use a text glyph instead of SVG */
+#wpList .shape-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
 }
 
-#waypointsSheet .icon-cell .wp-svg {
-  width: 100%;
-  height: 100%;
-}
-
-/* name / description box */
-#waypointsSheet .name-cell {
-  flex: 1 1 auto;
+/* name + meta */
+#wpList .wp-item-main {
   min-width: 0;
 }
 
-#waypointsSheet .name-cell .wp-name-input {
+#wpList .wp-item-name {
   width: 100%;
   box-sizing: border-box;
   padding: 6px 8px;
   border-radius: 8px;
+  border: 1px solid #25432b;
+  background: #14271a;
+  color: var(--text);
   font-size: 0.9rem;
   line-height: 1.2;
+  height: 32px;                  /* match button height */
 }
 
-/* buttons grouped in one column on mobile */
-#waypointsSheet .actions-col {
-  flex: 0 0 auto;
+#wpList .meta {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--subtle);
+}
+
+/* buttons – stacked on mobile, stay tight with the input */
+#wpList .wp-item-actions {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-#waypointsSheet .actions-col .btn {
+#wpList .wp-item-actions .btn {
+  padding: 6px 8px;
   min-width: 72px;
-  padding: 6px 8px;   /* keeps height close to the text field */
+  height: 32px;                  /* same as text box */
 }
 
-/* On wider screens, lay buttons out horizontally */
+/* Wider screens: actions in a horizontal row */
 @media (min-width: 640px) {
-  #waypointsSheet .actions-col {
+  #wpList .item {
+    grid-template-columns: auto 1fr auto;
+  }
+  #wpList .wp-item-actions {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-end;
   }
 }
+
+/* Make sure old generic .item styles don’t interfere */
+.sheet #wpList .item {
+  margin: 0;
+}
+
 
 .wp-type-row {
   display: flex;
