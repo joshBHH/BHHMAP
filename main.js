@@ -973,66 +973,63 @@ const ICON_SVGS = {
     </svg>
   `,
 
-        buck: `
+          buck: `
     <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- Antler rack (bold, obvious) -->
+      <!-- Body (side profile) -->
       <path
         d="
-          M7 5
-          L7 8
-          M7 6 L5.6 4.8
-          M7 7 L5.4 6.2
+          M5 16
+          Q 8.3 12.7 12 12.7
+          Q 15.7 12.7 19 15.4
+          L19 17.4
+          Q15.7 15.8 12 15.8
+          Q8.3 15.8 5.5 17.4
+          Z
+        "
+        fill="var(--wp-pin-icon)"
+      />
 
-          M17 5
-          L17 8
-          M17 6 L18.4 4.8
-          M17 7 L18.6 6.2
+      <!-- Neck + head -->
+      <path
+        d="
+          M12.0 12.7
+          L13.4 10.4
+          Q14.0 9.4 13.7 8.7
+          Q13.4 7.9 12.5 7.6
+          Q11.5 7.3 10.6 7.7
+          Q9.8 8.0 9.4 8.7
+          L8.7 10.0
+          Z
+        "
+        fill="var(--wp-pin-icon)"
+      />
+
+      <!-- Antlers (clean, non-palmated rack) -->
+      <path
+        d="
+          M12.9 7.5 L12.7 5.4
+          M13.2 7.2 L13.9 5.3
+          M12.4 7.4 L11.6 5.6
         "
         fill="none"
         stroke="var(--wp-pin-icon)"
-        stroke-width="1.6"
+        stroke-width="1.4"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
 
-      <!-- Head + face (front view) -->
+      <!-- Legs -->
       <path
-        d="
-          M9 8.5
-          Q12 7.5 15 8.5
-          L14.5 12.7
-          Q14.1 15 12 16
-          Q9.9 15 9.5 12.7
-          Z
-        "
-        fill="var(--wp-pin-icon)"
+        d="M9.5 15.9 L9.5 18.4"
+        stroke="var(--wp-pin-icon)"
+        stroke-width="1.9"
+        stroke-linecap="round"
       />
-
-      <!-- Ears -->
       <path
-        d="
-          M9.7 8.7
-          L8.2 7.6
-          L8.4 9.2
-          Z
-
-          M14.3 8.7
-          L15.8 7.6
-          L15.6 9.2
-          Z
-        "
-        fill="var(--wp-pin-icon)"
-      />
-
-      <!-- Neck -->
-      <path
-        d="
-          M10.2 12.8
-          L10.2 17.2
-          Q12 18.1 13.8 17.2
-          L13.8 12.8
-        "
-        fill="var(--wp-pin-icon)"
+        d="M13.6 16.1 L13.6 18.6"
+        stroke="var(--wp-pin-icon)"
+        stroke-width="1.9"
+        stroke-linecap="round"
       />
     </svg>
   `,
@@ -1040,44 +1037,33 @@ const ICON_SVGS = {
 
 
 
-        doe: `
+
+          doe: `
     <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- Body (side profile) -->
+      <!-- Body (side profile, a bit lighter / sleeker) -->
       <path
         d="
-          M5 15.5
-          Q8.2 12.3 12.4 12.3
-          Q15.5 12.3 18.5 13.8
-          Q17.9 15.6 16.5 16.7
-          Q14.9 15.9 13.0 15.7
-          Q10.4 15.4 7.5 16.7
-          Q6.0 16.1 5 15.5
+          M5.2 16
+          Q 8.1 13.0 12.0 13.0
+          Q 14.8 13.0 18.0 14.6
+          L18.0 16.4
+          Q14.8 15.4 12.0 15.4
+          Q9.2 15.4 6.2 16.8
           Z
         "
         fill="var(--wp-pin-icon)"
       />
 
-      <!-- Neck -->
+      <!-- Neck + head (no antlers, softer face) -->
       <path
         d="
-          M11.9 12.3
-          L13.0 10.2
-          L13.8 9.8
-          L14.1 11.3
-          L13.1 12.9
-        "
-        fill="var(--wp-pin-icon)"
-      />
-
-      <!-- Head (no antlers, softer face) -->
-      <path
-        d="
-          M13.8 9.8
-          Q15.2 9.3 16.0 8.5
-          Q16.9 7.7 16.6 7.0
-          Q16.3 6.3 15.2 6.1
-          Q14.0 5.9 13.0 6.4
-          Q12.0 7.0 11.7 7.9
+          M11.8 13.0
+          L12.9 10.9
+          Q13.4 10.0 13.1 9.3
+          Q12.8 8.6 12.0 8.3
+          Q11.1 8.0 10.3 8.3
+          Q9.5 8.6 9.0 9.4
+          L8.4 10.6
           Z
         "
         fill="var(--wp-pin-icon)"
@@ -1086,25 +1072,25 @@ const ICON_SVGS = {
       <!-- Ear -->
       <path
         d="
-          M12.9 6.4
-          L11.7 5.0
-          L11.5 6.3
+          M10.6 8.3
+          L9.6 7.0
+          L9.4 8.4
           Z
         "
         fill="var(--wp-pin-icon)"
       />
 
-      <!-- Simple legs (solid, not sticks) -->
+      <!-- Legs -->
       <path
-        d="M10.0 15.5 L10.0 18.2"
+        d="M9.3 15.7 L9.3 18.1"
         stroke="var(--wp-pin-icon)"
-        stroke-width="1.9"
+        stroke-width="1.8"
         stroke-linecap="round"
       />
       <path
-        d="M14.4 15.7 L14.4 18.2"
+        d="M13.0 15.8 L13.0 18.2"
         stroke="var(--wp-pin-icon)"
-        stroke-width="1.9"
+        stroke-width="1.8"
         stroke-linecap="round"
       />
     </svg>
