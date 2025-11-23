@@ -94,24 +94,24 @@ body,
   );
   backdrop-filter: blur(8px);
   border-top: 1px solid #203325;
-  flex-wrap: nowrap;          /* one row */
+  flex-wrap: nowrap;
 }
 
 .main-menu button {
-  flex: 1 1 0;                /* share row evenly */
-  min-width: 0;               /* allow shrinking */
+  flex: 1 1 0;
+  min-width: 0;
   max-width: none;
   padding: 8px 6px;
-  border: 1px solid #f97316;  /* bright orange border */
+  border: 1px solid #f97316;
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35);
   border-radius: 12px;
   background: #14271a;
   color: var(--text);
-  font-size: 13px;            /* desktop font size */
+  font-size: 13px;
   cursor: pointer;
-  white-space: nowrap;        /* single line */
+  white-space: nowrap;
   text-align: center;
-  overflow: visible;          /* don't clip text */
+  overflow: visible;
 }
 
 .wind-btn {
@@ -334,10 +334,10 @@ body,
   }
 
   .main-menu {
-    gap: 4px;                               /* tighter gap */
+    gap: 4px;
     justify-content: space-between;
-    flex-wrap: nowrap;                      /* keep single row */
-    overflow-x: hidden;                     /* no scrolling */
+    flex-wrap: nowrap;
+    overflow-x: hidden;
     padding: 6px 6px calc(10px + var(--safe-bottom));
   }
 
@@ -345,10 +345,10 @@ body,
     flex: 1 1 0;
     min-width: 0;
     max-width: none;
-    padding: 4px 2px;                       /* smaller padding */
-    font-size: clamp(8px, 1.8vw, 11px);    /* auto-shrink text */
-    white-space: nowrap;                    /* keep one line */
-    overflow: visible;                      /* do not cut text */
+    padding: 4px 2px;
+    font-size: clamp(8px, 1.8vw, 11px);
+    white-space: nowrap;
+    overflow: visible;
   }
 
   .wind-btn {
@@ -370,15 +370,15 @@ body,
 /* Floating “BHH Map Layers” button (draggable) */
 #bhhLayersBtn {
   position: fixed;
-  top: 10px;   /* sits near the zoom control */
-  left: 58px;  /* just to the right of the zoom buttons */
+  top: 10px;
+  left: 58px;
   z-index: 1300;
 }
 
 #bhhLayersBtn button {
   background: #14271a;
   color: var(--text);
-  border: 1px solid #f97316;  /* match main buttons */
+  border: 1px solid #f97316;
   border-radius: 12px;
   padding: 8px 12px;
   box-shadow: var(--shadow);
@@ -396,7 +396,7 @@ body,
   bottom: 90px;
   right: 12px;
   z-index: 1300;
-  display: block;          /* FORCE visible by default */
+  display: block;
 }
 
 /* Hide on large desktop viewports only */
@@ -405,7 +405,6 @@ body,
     display: none;
   }
 }
-
 
 .compass-ring {
   position: relative;
@@ -441,22 +440,22 @@ body,
 .compass-label.e { right: 4px;  top: 50%;  transform: translateY(-50%); }
 .compass-label.w { left: 4px;   top: 50%;  transform: translateY(-50%); }
 
-/* Needle: tip points UP at 0°; base sits at center of ring */
+/* Needle */
 .compass-needle {
   position: absolute;
   left: 50%;
-  top: 50%;                 /* center of the circle */
+  top: 50%;
   width: 0;
   height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-bottom: 22px solid #f97316;  /* triangle pointing UP */
-  transform-origin: 50% 100%;         /* pivot at the base (bottom center) */
+  border-bottom: 22px solid #f97316;
+  transform-origin: 50% 100%;
   transform: translate(-50%, -100%) rotate(0deg);
   filter: drop-shadow(0 1px 3px rgba(0,0,0,.8));
 }
 
-/* Hide compass UI on desktop / mouse devices */
+/* Hide compass sheet shortcut on desktop */
 @media (pointer: fine) {
   #compassWidget,
   #toolCompass {
@@ -464,11 +463,9 @@ body,
   }
 }
 
-/* Waypoint pin icons – match new SVG-only markers */
-/* The JS sets iconSize; these fill that box 100% */
-
+/* Waypoint pin icons */
 .wp-pin {
-  --wp-pin-icon: #f97316;       /* default icon color (user-changeable) */
+  --wp-pin-icon: #f97316;
 
   width: 100%;
   height: 100%;
@@ -476,7 +473,6 @@ body,
   align-items: center;
   justify-content: center;
 
-  /* pop on busy satellite imagery */
   filter: drop-shadow(0 0 4px rgba(0,0,0,0.75));
 }
 
@@ -485,12 +481,12 @@ body,
   height: 100%;
 }
 
-/* Per-type color accents (using the CSS variable the SVGs read) */
-.wp-pin.wp-blood  { --wp-pin-icon: #ef4444; }  /* red */
-.wp-pin.wp-hazard { --wp-pin-icon: #f97316; }  /* bright orange */
-.wp-pin.wp-water  { --wp-pin-icon: #22c55e; }  /* teal/green for water */
+/* Per-type color accents */
+.wp-pin.wp-blood  { --wp-pin-icon: #ef4444; }
+.wp-pin.wp-hazard { --wp-pin-icon: #f97316; }
+.wp-pin.wp-water  { --wp-pin-icon: #22c55e; }
 .wp-pin.wp-camp,
-.wp-pin.wp-truck  { --wp-pin-icon: #e5e7eb; }  /* light neutral */
+.wp-pin.wp-truck  { --wp-pin-icon: #e5e7eb; }
 .wp-pin.wp-buck,
 .wp-pin.wp-doe,
 .wp-pin.wp-stand,
@@ -499,9 +495,9 @@ body,
 .wp-pin.wp-rub,
 .wp-pin.wp-trail,
 .wp-pin.wp-camera,
-.wp-pin.wp-food   { --wp-pin-icon: #f97316; }  /* hunting orange */
+.wp-pin.wp-food   { --wp-pin-icon: #f97316; }
 
-/* Waypoints list (matches new main.js markup) */
+/* Waypoints list */
 .wp-list {
   max-height: 38vh;
   overflow: auto;
@@ -527,7 +523,7 @@ body,
   justify-content: center;
 }
 
-/* shapes (lines / areas) use a text glyph instead of SVG */
+/* shapes (lines / areas) */
 #wpList .shape-icon {
   width: 28px;
   height: 28px;
@@ -554,7 +550,7 @@ body,
   color: var(--text);
   font-size: 0.9rem;
   line-height: 1.2;
-  height: 32px;                  /* match button height */
+  height: 32px;
 }
 
 #wpList .meta {
@@ -563,7 +559,7 @@ body,
   color: var(--subtle);
 }
 
-/* buttons – stacked on mobile, stay tight with the input */
+/* buttons */
 #wpList .wp-item-actions {
   display: flex;
   flex-direction: column;
@@ -573,7 +569,7 @@ body,
 #wpList .wp-item-actions .btn {
   padding: 6px 8px;
   min-width: 72px;
-  height: 32px;                  /* same as text box */
+  height: 32px;
 }
 
 /* Wider screens: actions in a horizontal row */
@@ -593,7 +589,6 @@ body,
   margin: 0;
 }
 
-
 .wp-type-row {
   display: flex;
   align-items: center;
@@ -604,7 +599,4 @@ body,
   width: 32px;
   height: 32px;
 }
-
-
-
 /* [BHH: STYLES END] */
