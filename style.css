@@ -540,5 +540,68 @@ body,
   border-color: #15803d;
 }
 
+/* Waypoints sheet layout */
+#waypointsSheet .item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+#waypointsSheet .icon-cell {
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#waypointsSheet .icon-cell .wp-pin {
+  width: 32px;
+  height: 32px;
+}
+
+#waypointsSheet .icon-cell .wp-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* name / description box */
+#waypointsSheet .name-cell {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#waypointsSheet .name-cell .wp-name-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+/* buttons grouped in one column on mobile */
+#waypointsSheet .actions-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#waypointsSheet .actions-col .btn {
+  min-width: 72px;
+  padding: 6px 8px;   /* keeps height close to the text field */
+}
+
+/* On wider screens, lay buttons out horizontally */
+@media (min-width: 640px) {
+  #waypointsSheet .actions-col {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+
 
 /* [BHH: STYLES END] */
