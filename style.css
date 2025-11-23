@@ -602,6 +602,17 @@ body,
   }
 }
 
+.wp-type-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#wpTypePreview .wp-pin {
+  width: 32px;
+  height: 32px;
+}
+
 
 
 /* [BHH: STYLES END] */
