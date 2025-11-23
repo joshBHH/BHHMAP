@@ -936,272 +936,232 @@ document.querySelectorAll('.sheet .option').forEach(opt => {
  *******************/
 // [BHH: WAYPOINTS – DATA START]
 const markersLayer = L.featureGroup().addTo(map);
-const STORAGE_MARK = 'bhh_markers_v5';
+const STORAGE_MARK = 'bhh_markers_v6';
 
 // mobile vs desktop pin size
 const IS_MOBILE = matchMedia('(max-width:640px)').matches;
-// Slightly larger pins so they stay readable at all zoom levels
-const PIN_SZ    = IS_MOBILE ? 38 : 46;
+const PIN_SZ    = IS_MOBILE ? 34 : 38;
 
-
-// Simple inline SVG pictograms – icon-only, no outer circle/pin.
-// Color is controlled by CSS variables.
-//  --wp-pin-icon  : pictogram color (default orange)
-const ICON_SVGS = {};
-
-// Helpers to build compact 24x24 icons
-function makeIcon(inner) {
-  return `
+/* ---------- INLINE SVG ICONS (use --wp-pin-icon color) ---------- */
+const ICON_SVGS = {
+  default: `
     <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
-      ${inner}
+      <circle cx="12" cy="12" r="6.2"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.8"/>
+      <line x1="12" y1="4" x2="12" y2="7"
+        stroke="var(--wp-pin-icon)" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="12" y1="17" x2="12" y2="20"
+        stroke="var(--wp-pin-icon)" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="4" y1="12" x2="7" y2="12"
+        stroke="var(--wp-pin-icon)" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="17" y1="12" x2="20" y2="12"
+        stroke="var(--wp-pin-icon)" stroke-width="1.6" stroke-linecap="round"/>
     </svg>
-  `;
+  `,
+
+  buck: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <!-- body -->
+      <path d="M7 16.5 Q9.5 14 12 14 Q14.5 14 17 16.5"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.7"
+        stroke-linecap="round" stroke-linejoin="round" />
+      <!-- neck/head -->
+      <path d="M12 14 L13 11.7 Q13.4 11 13.1 10.1
+               Q12.6 9 11.4 9.1 L10.5 9.2"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.7"
+        stroke-linecap="round" stroke-linejoin="round" />
+      <!-- antlers -->
+      <path d="M11 8 L9.6 6.4 M11.2 7.4 L9.8 5.8
+               M13 8 L14.4 6.4 M12.8 7.4 L14.2 5.8"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.5"
+        stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  `,
+
+  doe: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <!-- body -->
+      <path d="M7.5 17 Q9.7 14.3 12 14.3 Q14.3 14.3 16.5 17"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.7"
+        stroke-linecap="round" stroke-linejoin="round" />
+      <!-- neck/head -->
+      <path d="M12 14.3 L13.2 12
+               Q13.8 11 13.2 10.2
+               Q12.7 9.4 11.7 9.4 L10.4 9.4"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.7"
+        stroke-linecap="round" stroke-linejoin="round" />
+      <!-- ears -->
+      <path d="M11 8.8 L10 7.8
+               M12.5 8.7 L13.4 7.5"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.4"
+        stroke-linecap="round" />
+    </svg>
+  `,
+
+  blood: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8.2 7.5 L6.6 11
+               A3.2 3.2 0 0 0 10.2 11 Z"
+        fill="var(--wp-pin-icon)" />
+      <path d="M12 6.2 L10.4 11.2
+               A3.4 3.4 0 0 0 13.6 11.2 Z"
+        fill="var(--wp-pin-icon)" />
+      <path d="M15.8 7.8 L14.2 11.3
+               A3.2 3.2 0 0 0 17.8 11.3 Z"
+        fill="var(--wp-pin-icon)" />
+    </svg>
+  `,
+
+  trail: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 18 Q9.5 15 11.5 15
+               Q13.5 15 15 13.4
+               Q16.2 12.2 18 12"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.9"
+        stroke-linecap="round" stroke-linejoin="round"
+        stroke-dasharray="2.4 2.4" />
+    </svg>
+  `,
+
+  stand: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="7" width="8" height="4" rx="0.8" ry="0.8"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.8"/>
+      <line x1="10" y1="11" x2="10" y2="18"
+        stroke="var(--wp-pin-icon)" stroke-width="1.7" stroke-linecap="round"/>
+      <line x1="14" y1="11" x2="14" y2="18"
+        stroke="var(--wp-pin-icon)" stroke-width="1.7" stroke-linecap="round"/>
+      <line x1="10" y1="13" x2="14" y2="13"
+        stroke="var(--wp-pin-icon)" stroke-width="1.3"/>
+      <line x1="10" y1="15" x2="14" y2="15"
+        stroke="var(--wp-pin-icon)" stroke-width="1.3"/>
+      <line x1="10" y1="17" x2="14" y2="17"
+        stroke="var(--wp-pin-icon)" stroke-width="1.3"/>
+    </svg>
+  `,
+
+  blind: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="8" width="12" height="8" rx="1.4" ry="1.4"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.8"/>
+      <rect x="9" y="10" width="6" height="2.6"
+        fill="var(--wp-pin-icon)"/>
+    </svg>
+  `,
+
+  scrape: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="9" cy="10" rx="1.4" ry="2.3"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.7"/>
+      <ellipse cx="15" cy="10" rx="1.4" ry="2.3"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.7"/>
+      <path d="M6 16 Q10 14 18 16"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.9"
+        stroke-linecap="round"/>
+    </svg>
+  `,
+
+  rub: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10.5" y="6" width="3" height="11" rx="1.3"
+        fill="var(--wp-pin-icon)"/>
+      <path d="M9 8 L7.4 9.6
+               M9 11 L7.3 12.4
+               M15 9.4 L16.6 7.8
+               M15 12.2 L16.7 10.9"
+        fill="none" stroke="#0f172a" stroke-width="1.3"
+        stroke-linecap="round"/>
+    </svg>
+  `,
+
+  camera: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="8" width="12" height="8" rx="1.6"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.8"/>
+      <circle cx="12" cy="12" r="3.1"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.6"/>
+      <circle cx="9" cy="9.5" r="0.8"
+        fill="var(--wp-pin-icon)"/>
+    </svg>
+  `,
+
+  food: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 17 Q13 14 13 11 Q13 8 12 6
+               Q11 8 11 11 Q11 14 12 17 Z"
+        fill="var(--wp-pin-icon)"/>
+      <path d="M9 10 Q6.7 10.1 6.1 12
+               Q7.8 12.2 9 11.3"
+        fill="none" stroke="#0f172a" stroke-width="1.4"
+        stroke-linecap="round"/>
+      <path d="M15 10 Q17.3 10.1 17.9 12
+               Q16.2 12.2 15 11.3"
+        fill="none" stroke="#0f172a" stroke-width="1.4"
+        stroke-linecap="round"/>
+    </svg>
+  `,
+
+  water: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 5 L8.4 11.4
+               A4.6 4.6 0 0 0 15.6 11.4 Z"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.9"/>
+    </svg>
+  `,
+
+  camp: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 18 L12 7 L18 18 Z"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.9"
+        stroke-linejoin="round"/>
+      <line x1="10" y1="18" x2="14" y2="18"
+        stroke="var(--wp-pin-icon)" stroke-width="1.9" stroke-linecap="round"/>
+    </svg>
+  `,
+
+  truck: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="10" width="9" height="5" rx="1.2"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.8"/>
+      <path d="M14 11 H17.6 L19 13.1 V15 H14 Z"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.8"
+        stroke-linejoin="round"/>
+      <circle cx="9" cy="16.4" r="1.5"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.6"/>
+      <circle cx="17" cy="16.4" r="1.5"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.6"/>
+    </svg>
+  `,
+
+  hazard: `
+    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <path d="M5 18 L12 6 L19 18 Z"
+        fill="none" stroke="var(--wp-pin-icon)" stroke-width="1.9"
+        stroke-linejoin="round"/>
+      <line x1="12" y1="10" x2="12" y2="14.2"
+        stroke="var(--wp-pin-icon)" stroke-width="1.9" stroke-linecap="round"/>
+      <circle cx="12" cy="16.6" r="0.9"
+        fill="var(--wp-pin-icon)"/>
+    </svg>
+  `
+};
+
+/* ---------- MARKER HELPERS ---------- */
+
+// HTML used both on map and inside the waypoint list
+function markerIconHTML(type) {
+  const svg = ICON_SVGS[type] || ICON_SVGS.default;
+  return `<div class="wp-pin wp-${type}">${svg}</div>`;
 }
 
-// Default generic dot
-ICON_SVGS.default = makeIcon(`
-  <circle cx="12" cy="12" r="4.2"
-          fill="none"
-          stroke="var(--wp-pin-icon, #f97316)"
-          stroke-width="2"/>
-`);
-
-// Buck
-ICON_SVGS.buck = makeIcon(`
-  <path d="M8.5 15.5c0 2.1 1.9 3.9 4 3.9s4-1.8 4-3.9"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"/>
-  <path d="M10.8 13.1c0-1.2.9-2.1 2-2.1 1.1 0 2 .9 2 2"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.8"
-        stroke-linecap="round"/>
-  <path d="M12.8 10.6 11.4 9.4M12.8 10.6 14.2 9.4
-           M11.4 9.4 10.4 8.3M14.2 9.4 15.2 8.3"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.7"
-        stroke-linecap="round"
-        stroke-linejoin="round"/>
-`);
-
-// Doe
-ICON_SVGS.doe = makeIcon(`
-  <path d="M8.5 15.5c0 2.1 1.9 3.9 4 3.9s4-1.8 4-3.9"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"/>
-  <path d="M11 13.1c.1-1 .9-1.9 1.8-1.9 1 0 1.7.9 1.9 1.9"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.8"
-        stroke-linecap="round"/>
-  <path d="M11.9 11.1 10.8 10M14.1 11.1 15.2 10"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.6"
-        stroke-linecap="round"/>
-`);
-
-// Blood trail
-ICON_SVGS.blood = makeIcon(`
-  <path d="M7.8 8.2 6.1 11.3a2.2 2.2 0 0 0 3.8 0z"
-        fill="var(--wp-pin-icon, #f97316)"/>
-  <path d="M11.2 7.3 9.5 10.4a2.2 2.2 0 0 0 3.8 0z"
-        fill="var(--wp-pin-icon, #f97316)"/>
-  <path d="M14.6 8.2 12.9 11.3a2.2 2.2 0 0 0 3.8 0z"
-        fill="var(--wp-pin-icon, #f97316)"/>
-`);
-
-// Trail (hoof prints + path)
-ICON_SVGS.trail = makeIcon(`
-  <ellipse cx="9" cy="10" rx="1.2" ry="2.1"
-           fill="none"
-           stroke="var(--wp-pin-icon, #f97316)"
-           stroke-width="1.7"/>
-  <ellipse cx="15" cy="12.1" rx="1.2" ry="2.1"
-           fill="none"
-           stroke="var(--wp-pin-icon, #f97316)"
-           stroke-width="1.7"/>
-  <path d="M7.3 16.4c1.8-.9 3.4-1.3 5.2-1.3 1.6 0 3 .3 4.3.8"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.9"
-        stroke-linecap="round"/>
-`);
-
-// Tree stand
-ICON_SVGS.stand = makeIcon(`
-  <rect x="7.7" y="7.8" width="8.6" height="4.3"
-        rx="1" ry="1"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.9"/>
-  <line x1="10" y1="12.1" x2="10" y2="17"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.7" stroke-linecap="round"/>
-  <line x1="14" y1="12.1" x2="14" y2="17"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.7" stroke-linecap="round"/>
-  <line x1="10" y1="13.5" x2="14" y2="13.5"
-        stroke="var(--wp-pin-icon, #f97316)" stroke-width="1.3"/>
-  <line x1="10" y1="15.1" x2="14" y2="15.1"
-        stroke="var(--wp-pin-icon, #f97316)" stroke-width="1.3"/>
-`);
-
-// Ground blind
-ICON_SVGS.blind = makeIcon(`
-  <rect x="6.9" y="8.2" width="10.2" height="7.2"
-        rx="1.5" ry="1.5"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.9"/>
-  <rect x="9" y="10" width="6" height="2.4"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.4"/>
-`);
-
-// Scrape
-ICON_SVGS.scrape = makeIcon(`
-  <path d="M7 16.6c2.1-1 3.9-1.4 6-1.4 1.6 0 3 .3 4.2.7"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="2"
-        stroke-linecap="round"/>
-  <path d="M11.5 9.5v4M11.5 10.2l-1.5-1M11.5 10.8l1.5-1"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.7"
-        stroke-linecap="round"
-        stroke-linejoin="round"/>
-`);
-
-// Rub
-ICON_SVGS.rub = makeIcon(`
-  <rect x="11" y="7.8" width="2.8" height="8.3" rx="1.3"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.8"/>
-  <path d="M10.3 9.1 8.9 10M10.3 11 8.9 11.8
-           M14.5 9.1l1.4.9M14.5 11l1.4.8"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.6"
-        stroke-linecap="round"/>
-`);
-
-// Camera
-ICON_SVGS.camera = makeIcon(`
-  <rect x="6.9" y="8.1" width="10.2" height="6.2"
-        rx="1.4" ry="1.4"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.8"/>
-  <circle cx="12" cy="11.2" r="2.1"
-          fill="none"
-          stroke="var(--wp-pin-icon, #f97316)"
-          stroke-width="1.6"/>
-  <circle cx="9" cy="9.6" r="0.7"
-          fill="var(--wp-pin-icon, #f97316)"/>
-`);
-
-// Food plot
-ICON_SVGS.food = makeIcon(`
-  <path d="M12 9.3v5.7"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.9"
-        stroke-linecap="round"/>
-  <path d="M12 10.2c-1.7-1.3-3.1-1.5-4.7-.9 0 1.7 1.4 2.9 3.1 3
-           M12 10.2c1.7-1.3 3.1-1.5 4.7-.9 0 1.7-1.4 2.9-3.1 3"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.7"
-        stroke-linecap="round"
-        stroke-linejoin="round"/>
-`);
-
-// Water
-ICON_SVGS.water = makeIcon(`
-  <path d="M12 7.7C10.1 10 8.8 11.9 8.8 14a3.2 3.2 0 0 0 6.4 0C15.2 11.9 13.9 10 12 7.7Z"
-        fill="none"
-        stroke="var(--wp-pin-icon, #22c55e)"
-        stroke-width="1.9"/>
-`);
-
-// Camp
-ICON_SVGS.camp = makeIcon(`
-  <path d="M6.8 16.8 12 8.7l5.2 8.1z"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="2"
-        stroke-linejoin="round"/>
-  <line x1="10.4" y1="16.8" x2="13.6" y2="16.8"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="2"
-        stroke-linecap="round"/>
-`);
-
-// Truck / parking
-ICON_SVGS.truck = makeIcon(`
-  <rect x="5.7" y="10" width="6.5" height="4"
-        rx="1" ry="1"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.7"/>
-  <path d="M12.2 10.7h3.1l1.3 1.9v2.1h-4.4"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="1.7"
-        stroke-linejoin="round"
-        stroke-linecap="round"/>
-  <circle cx="8" cy="15" r="1.1"
-          fill="none"
-          stroke="var(--wp-pin-icon, #f97316)"
-          stroke-width="1.4"/>
-  <circle cx="14.5" cy="15" r="1.1"
-          fill="none"
-          stroke="var(--wp-pin-icon, #f97316)"
-          stroke-width="1.4"/>
-`);
-
-// Hazard
-ICON_SVGS.hazard = makeIcon(`
-  <path d="M7.2 15.7 12 8.3l4.8 7.4z"
-        fill="none"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="2"
-        stroke-linejoin="round"/>
-  <line x1="12" y1="10.2" x2="12" y2="13.4"
-        stroke="var(--wp-pin-icon, #f97316)"
-        stroke-width="2"
-        stroke-linecap="round"/>
-  <circle cx="12" cy="14.8" r="0.8"
-          fill="var(--wp-pin-icon, #f97316)"/>
-`);
-
-
-// Build HTML for a pin for map + list
-function pinHTML(type) {
-  const key = ICON_SVGS[type] ? type : 'default';
-  return `<div class="wp-pin wp-${key}">${ICON_SVGS[key]}</div>`;
-}
-
-// Build Leaflet icon from same HTML
+// Leaflet icon wrapper (divIcon)
 function makePinIcon(type) {
-  const svgHtml = pinHTML(type);
   return L.divIcon({
     className: '',
-    html: svgHtml,
-    iconSize:  [PIN_SZ, PIN_SZ],      // bigger so they stay readable
-    iconAnchor:[PIN_SZ/2, PIN_SZ/2],
-    popupAnchor:[0, -PIN_SZ * 0.6]
+    html: markerIconHTML(type),
+    iconSize: [PIN_SZ, PIN_SZ],
+    iconAnchor: [PIN_SZ / 2, PIN_SZ / 2],
+    popupAnchor: [0, -PIN_SZ / 2]
   });
 }
 
@@ -1235,27 +1195,10 @@ function uid(){
   return Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 }
 
-// Friendly default names (decoupled from markerTypes so they never fall back to "Marker")
-function defaultName(type){
-  const friendly = {
-    stand:'Tree Stand',
-    blind:'Ground Blind',
-    buck:'Buck',
-    doe:'Doe',
-    blood:'Blood Trail',
-    scrape:'Scrape',
-    rub:'Rub',
-    trail:'Trail',
-    camera:'Trail Camera',
-    food:'Food Plot',
-    water:'Water Source',
-    camp:'Camp',
-    truck:'Truck / Parking',
-    hazard:'Hazard'
-  };
-  const base = friendly[type] || 'Marker';
+function defaultMarkerName(type){
+  const base = markerTypes[type]?.label || 'Marker';
   let n = 1;
-  markersLayer.eachLayer(m=>{
+  markersLayer.eachLayer(m => {
     if (m.options.type === type) n++;
   });
   return `${base} ${n}`;
@@ -1269,33 +1212,26 @@ function markerPopupHTML(m){
   const notes = m.options.notes
     ? `<div class="tag" style="margin-top:6px">${m.options.notes.replace(/</g,'&lt;')}</div>`
     : '';
+  // Edit + delete directly from popup
   return `
-    <div class="wp-popup">
-      <div class="wp-popup-header">
-        ${pinHTML(m.options.type || 'default')}
-        <div class="wp-popup-title">
-          <b>${m.options.name}</b>
-          <div class="tag">${cfg.label}</div>
-        </div>
-      </div>
-      ${img}${notes}
-      <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-        <button class="edit btn">Edit</button>
-        <button class="del btn danger">Delete</button>
-      </div>
+    <b>${m.options.name}</b>
+    <div class="tag">${cfg.label}</div>
+    ${img}${notes}
+    <div style="margin-top:8px; display:flex; gap:6px;">
+      <button class="edit">Edit</button>
+      <button class="del">Delete</button>
     </div>`;
 }
 
 function addMarker(latlng, type, name, id, notes, photo){
-  const t = type || 'default';
-  const cfg = markerTypes[t] || { label:'Marker', icon: makePinIcon('default') };
+  const cfg = markerTypes[type] || { label:'Marker', icon: makePinIcon('default') };
   const markerId   = id   || uid();
-  const markerName = name || defaultName(t);
+  const markerName = name || defaultMarkerName(type || 'default');
 
   const m = L.marker(latlng, {
     icon: cfg.icon,
     draggable:true,
-    type: t,
+    type,
     id: markerId,
     name: markerName,
     notes: notes || '',
@@ -1306,28 +1242,30 @@ function addMarker(latlng, type, name, id, notes, photo){
   setPopup();
 
   m.on('dragend', saveMarkers);
+
   m.on('click', () => {
-    if(deleteMode){
+    if (deleteMode){
       markersLayer.removeLayer(m);
       saveMarkers();
       refreshWaypointsUI();
     }
   });
-  m.on('popupopen', (e)=>{
+
+  m.on('popupopen', (e) => {
     const root = e.popup.getElement();
     if (!root) return;
     const btnDel  = root.querySelector('button.del');
     const btnEdit = root.querySelector('button.edit');
 
-    if(btnDel){
-      btnDel.addEventListener('click', ()=>{
+    if (btnDel){
+      btnDel.addEventListener('click', () => {
         markersLayer.removeLayer(m);
         saveMarkers();
         refreshWaypointsUI();
       });
     }
-    if(btnEdit){
-      btnEdit.addEventListener('click', ()=>{
+    if (btnEdit){
+      btnEdit.addEventListener('click', () => {
         openWaypointDetail(m);
       });
     }
@@ -1338,9 +1276,7 @@ function addMarker(latlng, type, name, id, notes, photo){
   return m;
 }
 
-const markersLayer = L.featureGroup().addTo(map);
-const STORAGE_MARK = 'bhh_markers_v5'; // keep same key so you don’t lose existing data
-
+/* ---------- STORAGE ---------- */
 function serializeMarkers(){
   const list=[];
   markersLayer.eachLayer(m=>{
@@ -1356,15 +1292,18 @@ function serializeMarkers(){
   });
   return list;
 }
+
 function deserializeMarkers(list){
   markersLayer.clearLayers();
   (list||[]).forEach(m =>
     addMarker([m.lat,m.lng], m.type, m.name, m.id, m.notes, m.photo)
   );
 }
+
 function saveMarkers(){
   localStorage.setItem(STORAGE_MARK, JSON.stringify(serializeMarkers()));
 }
+
 ;(function restoreMarkers(){
   try{
     const raw = localStorage.getItem(STORAGE_MARK);
@@ -1372,6 +1311,7 @@ function saveMarkers(){
   }catch(e){}
 })();
 
+/* ---------- MAP CLICK TO DROP MARKER ---------- */
 map.on('click', e=>{
   if(!activeType) return;
   addMarker(e.latlng, activeType);
@@ -1379,6 +1319,361 @@ map.on('click', e=>{
   refreshWaypointsUI();
 });
 // [BHH: WAYPOINTS – DATA END]
+
+
+/*******************
+ * WAYPOINTS manager UI hooks (fly/edit/guide/delete) + details sheet
+ *******************/
+// [BHH: WAYPOINTS – UI HOOKS START]
+const wpList        = document.getElementById('wpList');
+const wpSearch      = document.getElementById('wpSearch');
+const wpType        = document.getElementById('wpType');
+const wpName        = document.getElementById('wpName');
+const wpTypePreview = document.getElementById('wpTypePreview');
+
+const wpAddCenterBtn = document.getElementById('wpAddCenter');
+const wpAddGPSBtn    = document.getElementById('wpAddGPS');
+
+function updateWpTypePreview(){
+  if (!wpTypePreview || !wpType) return;
+  const t = wpType.value || 'stand';
+  wpTypePreview.innerHTML = markerIconHTML(t);
+}
+
+if (wpType){
+  wpType.addEventListener('change', updateWpTypePreview);
+  updateWpTypePreview();
+}
+
+if (wpAddCenterBtn){
+  wpAddCenterBtn.onclick = () => {
+    const t = wpType.value;
+    const n = wpName.value || undefined;
+    addMarker(map.getCenter(), t, n);
+    refreshWaypointsUI();
+    wpName.value = '';
+  };
+}
+
+if (wpAddGPSBtn){
+  wpAddGPSBtn.onclick = () => {
+    if (!navigator.geolocation){
+      alert('Geolocation not supported');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const t = wpType.value;
+        const n = wpName.value || undefined;
+        addMarker(
+          [pos.coords.latitude, pos.coords.longitude],
+          t, n
+        );
+        refreshWaypointsUI();
+        wpName.value = '';
+      },
+      err => alert('Location error: ' + err.message),
+      {enableHighAccuracy:true, timeout:8000}
+    );
+  };
+}
+
+/* ---------- DATA FOR LIST (markers + shapes) ---------- */
+function gatherShapes(){
+  const arr = [];
+  drawnItems.eachLayer(l => {
+    const type   = featureTypeFromLayer(l);
+    const center =
+      l.getBounds
+        ? l.getBounds().getCenter()
+        : (l.getLatLng ? l.getLatLng() : map.getCenter());
+
+    // Ensure metrics are up to date for area-type shapes
+    if (l instanceof L.Polygon || l instanceof L.Rectangle || l instanceof L.Circle){
+      updateShapeMetrics(l);
+    }
+
+    arr.push({
+      kind:'shape',
+      type,
+      name: l._bhhName || defaultShapeName(type),
+      layer:l,
+      center,
+      metrics: l._bhhMetrics || null
+    });
+  });
+  return arr;
+}
+
+function getWaypoints(){
+  const pts = [];
+  markersLayer.eachLayer(m => {
+    const {lat, lng} = m.getLatLng();
+    pts.push({
+      kind:'wp',
+      id:m.options.id,
+      name:m.options.name,
+      type:m.options.type,
+      lat,
+      lng,
+      layer:m
+    });
+  });
+  return pts;
+}
+
+function allItems(){
+  return [...getWaypoints(), ...gatherShapes()];
+}
+
+/* ---------- LIST RENDER ---------- */
+function refreshWaypointsUI(){
+  if (!wpList) return;
+
+  const q = (wpSearch && wpSearch.value || '').toLowerCase();
+  const items = allItems().filter(w =>
+    !q ||
+    (w.name && w.name.toLowerCase().includes(q)) ||
+    (markerTypes[w.type]?.label || '').toLowerCase().includes(q)
+  );
+
+  if (!items.length){
+    wpList.innerHTML = '<p class="tag" style="margin-top:8px">No items yet.</p>';
+    rebuildCompassTargets();
+    return;
+  }
+
+  wpList.innerHTML = items.map((w,i) => {
+    let iconHtml = '';
+    let metaHtml = '';
+
+    if (w.kind === 'wp'){
+      iconHtml = `<div class="wp-item-icon">${markerIconHTML(w.type)}</div>`;
+    } else {
+      // shapes: simple glyph
+      const glyph =
+        w.type === 'polyline'  ? '≡' :
+        w.type === 'circle'    ? '◯' :
+        w.type === 'rectangle' ? '▭' : '⬠';
+
+      iconHtml = `<div class="wp-item-icon shape-icon">${glyph}</div>`;
+
+      if (w.metrics){
+        if (w.type === 'circle'){
+          metaHtml = `<div class="meta">${w.metrics.radiusText} • ${w.metrics.areaText}</div>`;
+        } else {
+          metaHtml = `<div class="meta">${w.metrics.perimeterText} • ${w.metrics.areaText}</div>`;
+        }
+      }
+    }
+
+    const safeName = (w.name || '')
+      .replace(/&/g,'&amp;')
+      .replace(/"/g,'&quot;');
+
+    return `
+      <div class="item" data-kind="${w.kind}" data-idx="${i}">
+        ${iconHtml}
+        <div class="wp-item-main">
+          <input class="wp-item-name" type="text" value="${safeName}" />
+          ${metaHtml}
+        </div>
+        <div class="wp-item-actions">
+          <button class="btn btn-fly">Fly</button>
+          ${
+            w.kind === 'wp'
+              ? '<button class="btn btn-guide">Guide</button><button class="btn btn-edit">Edit</button>'
+              : ''
+          }
+          <button class="btn danger btn-del">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  rebuildCompassTargets();
+}
+
+if (wpSearch){
+  wpSearch.addEventListener('input', refreshWaypointsUI);
+}
+
+if (wpList){
+  wpList.addEventListener('click', (e) => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+
+    const idx   = parseInt(item.dataset.idx, 10);
+    const items = allItems();
+    const obj   = items[idx];
+    if (!obj) return;
+
+    if (e.target.classList.contains('btn-fly')){
+      if (obj.kind === 'wp'){
+        map.setView([obj.lat, obj.lng], Math.max(map.getZoom(), 16));
+        obj.layer.openPopup();
+      } else {
+        if (obj.layer.getBounds){
+          map.fitBounds(obj.layer.getBounds(), { maxZoom:18 });
+        } else if (obj.center){
+          map.setView(obj.center, 17);
+        }
+      }
+    }
+
+    if (e.target.classList.contains('btn-del')){
+      if (obj.kind === 'wp'){
+        markersLayer.removeLayer(obj.layer);
+        saveMarkers();
+      } else {
+        drawnItems.removeLayer(obj.layer);
+        removeSegLabels(obj.layer);
+        removeTotalLabel(obj.layer);
+        removeShapeLabel(obj.layer);
+        saveDraw();
+      }
+      refreshWaypointsUI();
+    }
+
+    if (e.target.classList.contains('btn-edit') && obj.kind === 'wp'){
+      openWaypointDetail(obj.layer);
+    }
+
+    if (e.target.classList.contains('btn-guide') && obj.kind === 'wp'){
+      setGuideTarget(obj.layer.options.id);
+      openSheet('compass');
+    }
+  });
+
+  wpList.addEventListener('input', (e) => {
+    if (!e.target.classList.contains('wp-item-name')) return;
+
+    const item = e.target.closest('.item');
+    if (!item) return;
+
+    const idx   = parseInt(item.dataset.idx, 10);
+    const items = allItems();
+    const obj   = items[idx];
+    if (!obj) return;
+
+    const val = e.target.value;
+    if (obj.kind === 'wp'){
+      obj.layer.options.name = val;
+      obj.layer.bindPopup(markerPopupHTML(obj.layer));
+      saveMarkers();
+    } else {
+      obj.layer._bhhName = val;
+      saveDraw();
+    }
+  });
+}
+
+/* ---------- Waypoint details (notes + photo) ---------- */
+let editingWP = null;
+const wpDetSheet     = document.getElementById('wpDetailSheet');
+const wpDetName      = document.getElementById('wpDetName');
+const wpDetType      = document.getElementById('wpDetType');
+const wpDetNotes     = document.getElementById('wpDetNotes');
+const wpPhotoInput   = document.getElementById('wpPhotoInput');
+const wpPhotoInfo    = document.getElementById('wpPhotoInfo');
+const wpPhotoPreview = document.getElementById('wpPhotoPreview');
+const wpPickPhotoBtn = document.getElementById('wpPickPhoto');
+const wpDetSaveBtn   = document.getElementById('wpDetSave');
+
+if (wpPickPhotoBtn){
+  wpPickPhotoBtn.onclick = () => wpPhotoInput.click();
+}
+
+function openWaypointDetail(marker){
+  editingWP = marker;
+  wpDetName.value  = marker.options.name || '';
+  wpDetType.value  = marker.options.type || 'stand';
+  wpDetNotes.value = marker.options.notes || '';
+
+  if (marker.options.photo){
+    wpPhotoInfo.textContent =
+      `${Math.round(marker.options.photo.length / 1024)} KB`;
+    wpPhotoPreview.innerHTML =
+      `<img src="${marker.options.photo}" alt="photo" style="max-width:100%;border-radius:10px;border:1px solid #203325"/>`;
+  } else {
+    wpPhotoInfo.textContent   = 'No photo';
+    wpPhotoPreview.innerHTML  = '';
+  }
+
+  openSheet('wpDetail');
+}
+
+function readAndCompressImage(file, maxDim = 1280, quality = 0.82){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let {width:w, height:h} = img;
+      const scale = Math.min(1, maxDim / Math.max(w, h));
+      const cw = Math.round(w * scale);
+      const ch = Math.round(h * scale);
+
+      const c   = document.createElement('canvas');
+      c.width   = cw;
+      c.height  = ch;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, cw, ch);
+
+      const url = c.toDataURL('image/jpeg', quality);
+      if (url.length / 1024 > 1500){
+        return reject('Image too large after compression; try a smaller image.');
+      }
+      resolve(url);
+    };
+    img.onerror = reject;
+
+    const fr = new FileReader();
+    fr.onload  = () => { img.src = fr.result; };
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
+if (wpPhotoInput){
+  wpPhotoInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !editingWP) return;
+
+    try {
+      const dataUrl = await readAndCompressImage(file, 1280, 0.82);
+      editingWP.options.photo = dataUrl;
+      wpPhotoInfo.textContent =
+        `${Math.round(dataUrl.length / 1024)} KB`;
+      wpPhotoPreview.innerHTML =
+        `<img src="${dataUrl}" alt="photo" style="max-width:100%;border-radius:10px;border:1px solid #203325"/>`;
+      saveMarkers();
+      editingWP.bindPopup(markerPopupHTML(editingWP));
+    } catch(err){
+      alert('Photo failed: ' + err);
+    }
+
+    e.target.value = '';
+  });
+}
+
+if (wpDetSaveBtn){
+  wpDetSaveBtn.onclick = () => {
+    if (!editingWP) return;
+
+    editingWP.options.name  = wpDetName.value || editingWP.options.name;
+    editingWP.options.type  = wpDetType.value;
+    editingWP.options.notes = wpDetNotes.value || '';
+
+    const cfg =
+      markerTypes[editingWP.options.type] ||
+      { icon: makePinIcon('default') };
+
+    editingWP.setIcon(cfg.icon);
+    editingWP.bindPopup(markerPopupHTML(editingWP));
+    saveMarkers();
+    refreshWaypointsUI();
+    closeSheets();
+  };
+}
+// [BHH: WAYPOINTS – UI HOOKS END]
 
 
 /*******************
