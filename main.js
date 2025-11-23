@@ -1256,9 +1256,9 @@ map.on('click', e => {
  *******************/
 // [BHH: TRACK START]
 const trackLayer = L.polyline([], {
-  color: '#22d3ee',
-  weight: 4,
-  opacity: 0.9
+  color:'#22d3ee',
+  weight:4,
+  opacity:0.9
 }).addTo(map);
 
 const STORAGE_TRK = 'bhh_track_v1';
@@ -1267,29 +1267,41 @@ let watchId = null;
 let startTime = null;
 let lastPoint = null;
 
-function loadTrack() {
+// Track UI elements
+const trkPtsEl    = document.getElementById('trkPts');
+const trkDistEl   = document.getElementById('trkDist');
+const trkDurEl    = document.getElementById('trkDur');
+const pTrkDistEl  = document.getElementById('pTrkDist');
+const pTrkDurEl   = document.getElementById('pTrkDur');
+const trkStatusEl = document.getElementById('trkStatus');
+const trkStartBtn = document.getElementById('trkStartStop');
+const trkClearBtn = document.getElementById('trkClear');
+const trkFollowEl = document.getElementById('trkFollow');
+
+function loadTrack(){
   try {
     const raw = localStorage.getItem(STORAGE_TRK);
-    if (raw) {
+    if (raw){
       trackPoints = JSON.parse(raw) || [];
       trackLayer.setLatLngs(trackPoints.map(p => [p.lat, p.lng]));
     }
-  } catch (e) { }
+  } catch(e){}
   updateTrackStats();
 }
 
-function saveTrack() {
+function saveTrack(){
   localStorage.setItem(STORAGE_TRK, JSON.stringify(trackPoints));
   updateTrackStats();
 }
 
-function appendPoint(lat, lng, t) {
-  const pt = { lat, lng, t: t || Date.now() };
-  if (lastPoint) {
+function appendPoint(lat, lng, t){
+  const pt = {lat, lng, t: t || Date.now()};
+  if (lastPoint){
     const d = map.distance(
       [lastPoint.lat, lastPoint.lng],
-      [lat, lng]
+      [lat,          lng]
     );
+    // ignore jitter < 3m
     if (d < 3) return;
   }
   trackPoints.push(pt);
@@ -1298,104 +1310,98 @@ function appendPoint(lat, lng, t) {
   saveTrack();
 }
 
-function trackDistance() {
+function trackDistance(){
   let d = 0;
-  for (let i = 1; i < trackPoints.length; i++) {
+  for (let i = 1; i < trackPoints.length; i++){
     d += map.distance(
-      [trackPoints[i - 1].lat, trackPoints[i - 1].lng],
-      [trackPoints[i].lat, trackPoints[i].lng]
+      [trackPoints[i-1].lat, trackPoints[i-1].lng],
+      [trackPoints[i].lat,   trackPoints[i].lng]
     );
   }
   return d;
 }
 
-function updateTrackStats() {
-  const pts = trackPoints.length;
+function updateTrackStats(){
+  if (!trkPtsEl || !trkDistEl || !trkDurEl || !pTrkDistEl || !pTrkDurEl) return;
+
+  const pts  = trackPoints.length;
   const dist = trackDistance();
 
-  const elPts = document.getElementById('trkPts');
-  const elDist = document.getElementById('trkDist');
-  const elDur = document.getElementById('trkDur');
-  const elpDist = document.getElementById('pTrkDist');
-  const elpDur = document.getElementById('pTrkDur');
-
-  if (!elPts || !elDist || !elDur || !elpDist || !elpDur) return;
-
-  elPts.textContent = pts;
+  trkPtsEl.textContent = pts;
 
   const distText = dist > 1609.344
     ? (dist / 1609.344).toFixed(2) + ' mi'
     : Math.round(dist * 3.28084) + ' ft';
 
-  elDist.textContent = distText;
-  elpDist.textContent = distText;
+  trkDistEl.textContent  = distText;
+  pTrkDistEl.textContent = distText;
 
   const durMs = startTime
     ? (Date.now() - startTime)
     : (trackPoints.length
-      ? (trackPoints[trackPoints.length - 1].t - trackPoints[0].t)
-      : 0);
+        ? (trackPoints[trackPoints.length-1].t - trackPoints[0].t)
+        : 0);
 
   const mm = Math.floor(durMs / 60000);
-  const ss = (Math.floor(durMs / 1000) % 60).toString().padStart(2, '0');
+  const ss = (Math.floor(durMs / 1000) % 60).toString().padStart(2,'0');
 
   const durText = `${mm}:${ss}`;
-  elDur.textContent = durText;
-  elpDur.textContent = durText;
+  trkDurEl.textContent  = durText;
+  pTrkDurEl.textContent = durText;
 }
 
-function startTrack() {
-  if (!navigator.geolocation) {
+function startTrack(){
+  if (!navigator.geolocation){
     alert('Geolocation not supported');
     return;
   }
   if (watchId) return;
 
-  document.getElementById('trkStatus').textContent = 'Recording';
-  document.getElementById('trkStartStop').textContent = 'Stop';
   startTime = Date.now();
+  if (trkStatusEl) trkStatusEl.textContent = 'Recording';
+  if (trkStartBtn) trkStartBtn.textContent = 'Stop';
 
   watchId = navigator.geolocation.watchPosition(
     pos => {
-      const { latitude, longitude } = pos.coords;
+      const {latitude, longitude} = pos.coords;
       appendPoint(latitude, longitude, Date.now());
-      if (document.getElementById('trkFollow').checked) {
+      if (trkFollowEl && trkFollowEl.checked){
         map.setView([latitude, longitude], Math.max(map.getZoom(), 16));
       }
     },
     err => {
       console.warn('track error', err);
     },
-    { enableHighAccuracy: true, maximumAge: 5000 }
+    { enableHighAccuracy:true, maximumAge:5000 }
   );
 }
 
-function stopTrack() {
+function stopTrack(){
   if (!watchId) return;
   navigator.geolocation.clearWatch(watchId);
   watchId = null;
-  document.getElementById('trkStatus').textContent = 'Stopped';
-  document.getElementById('trkStartStop').textContent = 'Start';
+  if (trkStatusEl) trkStatusEl.textContent = 'Stopped';
+  if (trkStartBtn) trkStartBtn.textContent = 'Start';
   updateTrackStats();
 }
 
-function clearTrack() {
+function clearTrack(){
   stopTrack();
   trackPoints = [];
-  lastPoint = null;
+  lastPoint   = null;
   trackLayer.setLatLngs([]);
   saveTrack();
 }
 
-function exportGPX() {
-  if (!trackPoints.length) {
+function exportGPX(){
+  if (!trackPoints.length){
     alert('No track to export');
     return;
   }
 
   const name =
     'BHH Track ' +
-    new Date(trackPoints[0].t).toISOString().slice(0, 10);
+    new Date(trackPoints[0].t).toISOString().slice(0,10);
 
   const head =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
@@ -1408,19 +1414,34 @@ function exportGPX() {
   const tail = `</trkseg></trk></gpx>`;
 
   const blob = new Blob([head + seg + tail], {
-    type: 'application/gpx+xml'
+    type:'application/gpx+xml'
   });
 
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name.replace(/\s+/g, '_') + '.gpx';
+  const a   = document.createElement('a');
+  a.href    = url;
+  a.download = name.replace(/\s+/g,'_') + '.gpx';
   a.click();
   URL.revokeObjectURL(url);
 }
 
+// Hook buttons
+if (trkStartBtn){
+  trkStartBtn.addEventListener('click', () => {
+    if (watchId){
+      stopTrack();
+    } else {
+      startTrack();
+    }
+  });
+}
+if (trkClearBtn){
+  trkClearBtn.addEventListener('click', clearTrack);
+}
+
 loadTrack();
 // [BHH: TRACK END]
+
 
 
 /*******************
@@ -2327,43 +2348,66 @@ function getWaypoints() {
   return pts;
 }
 
-function emojiFor(item) {
-  if (item.kind === 'shape') {
+function emojiFor(item){
+  if (item.kind === 'shape'){
     return ({
-      polyline: '📏',
-      polygon: '⬠',
-      rectangle: '▭',
-      circle: '◯'
+      polyline:'📏',
+      polygon:'⬠',
+      rectangle:'▭',
+      circle:'◯'
     })[item.type] || '⬣';
   }
-  return ({
-    stand: '🎯',
-    feeder: '🍽️',
-    camera: '📷',
-    scrape: '🦌',
-    rub: '🪵',
-    water: '💧'
-  })[item.type] || '📍';
+
+  const iconByType = {
+    stand:'🎯',
+    blind:'🏕️',
+    buck:'🦌',
+    doe:'🦌',
+    blood:'🩸',
+    trail:'🥾',
+    camera:'📷',
+    scrape:'🦌',
+    rub:'🪵',
+    food:'🌾',
+    water:'💧',
+    camp:'🏕️',
+    truck:'🚙',
+    hazard:'⚠️'
+  };
+
+  return iconByType[item.type] || '📍';
 }
 
-function labelFor(item) {
-  if (item.kind === 'shape') {
+function labelFor(item){
+  if (item.kind === 'shape'){
     return ({
-      polyline: 'Line',
-      polygon: 'Area',
-      rectangle: 'Plot',
-      circle: 'Circle'
+      polyline:'Line',
+      polygon:'Area',
+      rectangle:'Plot',
+      circle:'Circle'
     })[item.type] || 'Shape';
   }
-  return ({
-    stand: 'Tree Stand',
-    feeder: 'Feeder',
-    camera: 'Trail Camera',
-    scrape: 'Scrape',
-    rub: 'Rub',
-    water: 'Water Source'
-  })[item.type] || 'Marker';
+
+  const labelByType = {
+    stand:'Tree Stand',
+    blind:'Ground Blind',
+    buck:'Buck',
+    doe:'Doe',
+    blood:'Blood Trail',
+    trail:'Trail',
+    camera:'Trail Camera',
+    scrape:'Scrape',
+    rub:'Rub',
+    food:'Food Plot',
+    water:'Water Source',
+    camp:'Camp',
+    truck:'Truck / Parking',
+    hazard:'Hazard'
+  };
+
+  return labelByType[item.type] || 'Marker';
 }
+
 
 function allItems() {
   return [...getWaypoints(), ...gatherShapes()];
