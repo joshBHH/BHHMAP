@@ -73,6 +73,26 @@ function defaultShapeName(type) {
   return `${base} ${n}`;
 }
 
+// label cleanup helpers
+function removeSegLabels(layer) {
+  if (layer._segLabels) {
+    layer._segLabels.forEach(lbl => segmentLabelsGroup.removeLayer(lbl));
+    layer._segLabels = null;
+  }
+}
+function removeTotalLabel(layer) {
+  if (layer._totalLabel) {
+    segmentLabelsGroup.removeLayer(layer._totalLabel);
+    layer._totalLabel = null;
+  }
+}
+function removeShapeLabel(layer) {
+  if (layer._shapeLabel) {
+    segmentLabelsGroup.removeLayer(layer._shapeLabel);
+    layer._shapeLabel = null;
+  }
+}
+
 // Save drawings (circles handled separately)
 function saveDraw() {
   const geojson = { type: 'FeatureCollection', features: [] };
@@ -105,6 +125,19 @@ function saveDraw() {
   localStorage.setItem(STORAGE_DRAW, JSON.stringify(bundle));
 }
 
+// attach “tap to delete” for shapes when Delete mode is on
+function attachShapeDeleteHandler(layer) {
+  layer.on('click', () => {
+    if (!deleteMode) return;
+    drawnItems.removeLayer(layer);
+    removeSegLabels(layer);
+    removeTotalLabel(layer);
+    removeShapeLabel(layer);
+    saveDraw();
+    refreshWaypointsUI();
+  });
+}
+
 // Restore drawings
 function restoreDraw() {
   const raw = localStorage.getItem(STORAGE_DRAW);
@@ -134,6 +167,8 @@ function restoreDraw() {
             // Area / perimeter metrics
             updateShapeMetrics(layer);
           }
+
+          attachShapeDeleteHandler(layer);
         }
       });
 
@@ -144,6 +179,7 @@ function restoreDraw() {
           defaultShapeName('circle');
         drawnItems.addLayer(layer);
         updateShapeMetrics(layer);
+        attachShapeDeleteHandler(layer);
       });
 
     } else if (data.type === 'FeatureCollection') { // legacy
@@ -156,6 +192,7 @@ function restoreDraw() {
             labelPolylineSegments(layer);
             updatePolylineTotalLabel(layer);
           }
+          attachShapeDeleteHandler(layer);
         }
       });
     }
@@ -238,6 +275,7 @@ map.on(L.Draw.Event.CREATED, function (e) {
     updateShapeMetrics(layer);
   }
 
+  attachShapeDeleteHandler(layer);
   saveDraw();
 
   // Stop drawing after one shape
@@ -283,32 +321,10 @@ if (drawCircleBtn) {
 /*******************
  * DISTANCE + AREA LABELS
  *******************/
-// distance labels for polylines
 function fmtFeetMiles(m) {
   const ft = m * 3.28084;
   if (m >= 1609.344) return (m / 1609.344).toFixed(2) + ' mi';
   return Math.round(ft) + ' ft';
-}
-
-function removeSegLabels(layer) {
-  if (layer._segLabels) {
-    layer._segLabels.forEach(lbl => segmentLabelsGroup.removeLayer(lbl));
-    layer._segLabels = null;
-  }
-}
-
-function removeTotalLabel(layer) {
-  if (layer._totalLabel) {
-    segmentLabelsGroup.removeLayer(layer._totalLabel);
-    layer._totalLabel = null;
-  }
-}
-
-function removeShapeLabel(layer) {
-  if (layer._shapeLabel) {
-    segmentLabelsGroup.removeLayer(layer._shapeLabel);
-    layer._shapeLabel = null;
-  }
 }
 
 // Per-segment labels
@@ -319,7 +335,6 @@ function labelPolylineSegments(layer) {
   const labels = [];
 
   // If this is just a single segment, skip per-segment tags.
-  // The Total label will handle it so you don’t see duplicates.
   if (pts.length <= 2) {
     layer._segLabels = [];
     return;
@@ -386,7 +401,6 @@ function updatePolylineTotalLabel(layer) {
 
 // Area + perimeter metrics for polygons / rectangles / circles
 function updateShapeMetrics(layer) {
-  // Only polygons / rectangles / circles get area metrics
   if (!(layer instanceof L.Polygon) &&
       !(layer instanceof L.Rectangle) &&
       !(layer instanceof L.Circle)) {
@@ -1212,7 +1226,6 @@ function markerPopupHTML(m){
   const notes = m.options.notes
     ? `<div class="tag" style="margin-top:6px">${m.options.notes.replace(/</g,'&lt;')}</div>`
     : '';
-  // Edit + delete directly from popup
   return `
     <b>${m.options.name}</b>
     <div class="tag">${cfg.label}</div>
@@ -1241,7 +1254,10 @@ function addMarker(latlng, type, name, id, notes, photo){
   const setPopup = () => m.bindPopup(markerPopupHTML(m), {autoPan:false});
   setPopup();
 
-  m.on('dragend', saveMarkers);
+  m.on('dragend', () => {
+    saveMarkers();
+    refreshWaypointsUI();
+  });
 
   m.on('click', () => {
     if (deleteMode){
@@ -1333,6 +1349,13 @@ const wpTypePreview = document.getElementById('wpTypePreview');
 
 const wpAddCenterBtn = document.getElementById('wpAddCenter');
 const wpAddGPSBtn    = document.getElementById('wpAddGPS');
+
+// populate wpType from markerTypes so values always match keys
+if (wpType){
+  wpType.innerHTML = Object.entries(markerTypes).map(([key, cfg]) =>
+    `<option value="${key}">${cfg.label}</option>`
+  ).join('');
+}
 
 function updateWpTypePreview(){
   if (!wpTypePreview || !wpType) return;
@@ -1450,7 +1473,6 @@ function refreshWaypointsUI(){
     if (w.kind === 'wp'){
       iconHtml = `<div class="wp-item-icon">${markerIconHTML(w.type)}</div>`;
     } else {
-      // shapes: simple glyph
       const glyph =
         w.type === 'polyline'  ? '≡' :
         w.type === 'circle'    ? '◯' :
@@ -1579,364 +1601,6 @@ const wpPhotoPreview = document.getElementById('wpPhotoPreview');
 const wpPickPhotoBtn = document.getElementById('wpPickPhoto');
 const wpDetSaveBtn   = document.getElementById('wpDetSave');
 
-if (wpPickPhotoBtn){
-  wpPickPhotoBtn.onclick = () => wpPhotoInput.click();
-}
-
-function openWaypointDetail(marker){
-  editingWP = marker;
-  wpDetName.value  = marker.options.name || '';
-  wpDetType.value  = marker.options.type || 'stand';
-  wpDetNotes.value = marker.options.notes || '';
-
-  if (marker.options.photo){
-    wpPhotoInfo.textContent =
-      `${Math.round(marker.options.photo.length / 1024)} KB`;
-    wpPhotoPreview.innerHTML =
-      `<img src="${marker.options.photo}" alt="photo" style="max-width:100%;border-radius:10px;border:1px solid #203325"/>`;
-  } else {
-    wpPhotoInfo.textContent   = 'No photo';
-    wpPhotoPreview.innerHTML  = '';
-  }
-
-  openSheet('wpDetail');
-}
-
-function readAndCompressImage(file, maxDim = 1280, quality = 0.82){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      let {width:w, height:h} = img;
-      const scale = Math.min(1, maxDim / Math.max(w, h));
-      const cw = Math.round(w * scale);
-      const ch = Math.round(h * scale);
-
-      const c   = document.createElement('canvas');
-      c.width   = cw;
-      c.height  = ch;
-      const ctx = c.getContext('2d');
-      ctx.drawImage(img, 0, 0, cw, ch);
-
-      const url = c.toDataURL('image/jpeg', quality);
-      if (url.length / 1024 > 1500){
-        return reject('Image too large after compression; try a smaller image.');
-      }
-      resolve(url);
-    };
-    img.onerror = reject;
-
-    const fr = new FileReader();
-    fr.onload  = () => { img.src = fr.result; };
-    fr.onerror = reject;
-    fr.readAsDataURL(file);
-  });
-}
-
-if (wpPhotoInput){
-  wpPhotoInput.addEventListener('change', async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file || !editingWP) return;
-
-    try {
-      const dataUrl = await readAndCompressImage(file, 1280, 0.82);
-      editingWP.options.photo = dataUrl;
-      wpPhotoInfo.textContent =
-        `${Math.round(dataUrl.length / 1024)} KB`;
-      wpPhotoPreview.innerHTML =
-        `<img src="${dataUrl}" alt="photo" style="max-width:100%;border-radius:10px;border:1px solid #203325"/>`;
-      saveMarkers();
-      editingWP.bindPopup(markerPopupHTML(editingWP));
-    } catch(err){
-      alert('Photo failed: ' + err);
-    }
-
-    e.target.value = '';
-  });
-}
-
-if (wpDetSaveBtn){
-  wpDetSaveBtn.onclick = () => {
-    if (!editingWP) return;
-
-    editingWP.options.name  = wpDetName.value || editingWP.options.name;
-    editingWP.options.type  = wpDetType.value;
-    editingWP.options.notes = wpDetNotes.value || '';
-
-    const cfg =
-      markerTypes[editingWP.options.type] ||
-      { icon: makePinIcon('default') };
-
-    editingWP.setIcon(cfg.icon);
-    editingWP.bindPopup(markerPopupHTML(editingWP));
-    saveMarkers();
-    refreshWaypointsUI();
-    closeSheets();
-  };
-}
-// [BHH: WAYPOINTS – UI HOOKS END]
-
-
-/*******************
- * WAYPOINTS manager UI hooks (fly/edit/guide/delete) + details sheet
- *******************/
-// [BHH: WAYPOINTS – UI HOOKS START]
-const wpList   = document.getElementById('wpList');
-const wpSearch = document.getElementById('wpSearch');
-const wpType   = document.getElementById('wpType');
-const wpName   = document.getElementById('wpName');
-
-const wpAddCenterBtn = document.getElementById('wpAddCenter');
-const wpAddGPSBtn    = document.getElementById('wpAddGPS');
-
-// Build dropdown options from markerTypes so values always match keys
-if (wpType){
-  wpType.innerHTML = Object.entries(markerTypes).map(([key, cfg]) =>
-    `<option value="${key}">${cfg.label}</option>`
-  ).join('');
-}
-
-if (wpAddCenterBtn){
-  wpAddCenterBtn.onclick = () => {
-    const t = wpType.value;
-    const n = wpName.value || undefined;
-    addMarker(map.getCenter(), t, n);
-    refreshWaypointsUI();
-    wpName.value = '';
-  };
-}
-
-if (wpAddGPSBtn){
-  wpAddGPSBtn.onclick = () => {
-    if (!navigator.geolocation){
-      alert('Geolocation not supported');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const t = wpType.value;
-        const n = wpName.value || undefined;
-        addMarker(
-          [pos.coords.latitude, pos.coords.longitude],
-          t, n
-        );
-        refreshWaypointsUI();
-        wpName.value = '';
-      },
-      err => alert('Location error: ' + err.message),
-      {enableHighAccuracy:true, timeout:8000}
-    );
-  };
-}
-
-function gatherShapes(){
-  const arr = [];
-  drawnItems.eachLayer(l => {
-    const type   = featureTypeFromLayer(l);
-    const center =
-      l.getBounds
-        ? l.getBounds().getCenter()
-        : (l.getLatLng ? l.getLatLng() : map.getCenter());
-
-    if (l instanceof L.Polygon || l instanceof L.Rectangle || l instanceof L.Circle){
-      updateShapeMetrics(l);
-    }
-
-    arr.push({
-      kind:'shape',
-      type,
-      name: l._bhhName || defaultShapeName(type),
-      layer:l,
-      center,
-      metrics: l._bhhMetrics || null
-    });
-  });
-  return arr;
-}
-
-function getWaypoints(){
-  const pts = [];
-  markersLayer.eachLayer(m => {
-    const {lat, lng} = m.getLatLng();
-    pts.push({
-      kind:'wp',
-      id:m.options.id,
-      name:m.options.name,
-      type:m.options.type,
-      lat,
-      lng,
-      layer:m
-    });
-  });
-  return pts;
-}
-
-function labelFor(item){
-  if (item.kind === 'shape'){
-    return ({
-      polyline:'Line',
-      polygon:'Area',
-      rectangle:'Plot',
-      circle:'Circle'
-    })[item.type] || 'Shape';
-  }
-  return markerTypes[item.type]?.label || 'Marker';
-}
-
-function iconHTMLForItem(w){
-  if (w.kind === 'wp'){
-    return pinHTML(w.type || 'default');
-  }
-  // simple glyphs for shapes
-  const glyph = ({
-    polyline:'📏',
-    polygon:'⬠',
-    rectangle:'▭',
-    circle:'◯'
-  })[w.type] || '⬣';
-  return `<div class="shape-icon">${glyph}</div>`;
-}
-
-function allItems(){
-  return [...getWaypoints(), ...gatherShapes()];
-}
-
-function refreshWaypointsUI(){
-  if (!wpList) return;
-
-  const q = (wpSearch.value || '').toLowerCase();
-  const items = allItems().filter(w =>
-    !q ||
-    (w.name && w.name.toLowerCase().includes(q)) ||
-    (labelFor(w).toLowerCase().includes(q))
-  );
-
-  wpList.innerHTML =
-    items.length === 0
-      ? '<p class="tag" style="margin-top:8px">No items yet.</p>'
-      : items.map((w,i) => {
-          let meta = '';
-          if (w.kind === 'shape' && w.metrics){
-            if (w.type === 'circle'){
-              meta = `<div class="meta">${w.metrics.radiusText} • ${w.metrics.areaText}</div>`;
-            } else {
-              meta = `<div class="meta">${w.metrics.perimeterText} • ${w.metrics.areaText}</div>`;
-            }
-          }
-
-          return `
-          <div class="item" data-kind="${w.kind}" data-idx="${i}">
-            <div class="wp-item-icon">
-              ${iconHTMLForItem(w)}
-            </div>
-            <div class="wp-item-main">
-              <input type="text"
-                     class="wp-item-name"
-                     value="${(w.name || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"/>
-              ${meta}
-            </div>
-            <div class="wp-item-actions">
-              <button class="btn fly">Fly</button>
-              ${
-                w.kind === 'wp'
-                  ? '<button class="btn guide">Guide</button><button class="btn edit">Edit</button>'
-                  : ''
-              }
-              <button class="btn danger del">Delete</button>
-            </div>
-          </div>`;
-        }).join('');
-
-  rebuildCompassTargets();
-}
-
-if (wpSearch){
-  wpSearch.addEventListener('input', refreshWaypointsUI);
-}
-
-if (wpList){
-  wpList.addEventListener('click', (e) => {
-    const item = e.target.closest('.item');
-    if (!item) return;
-
-    const idx   = parseInt(item.dataset.idx, 10);
-    const items = allItems();
-    const obj   = items[idx];
-    if (!obj) return;
-
-    if (e.target.classList.contains('fly')){
-      if (obj.kind === 'wp'){
-        map.setView([obj.lat, obj.lng], Math.max(map.getZoom(), 16));
-        obj.layer.openPopup();
-      } else {
-        if (obj.layer.getBounds){
-          map.fitBounds(obj.layer.getBounds(), { maxZoom:18 });
-        } else if (obj.center){
-          map.setView(obj.center, 17);
-        }
-      }
-    }
-
-    if (e.target.classList.contains('del')){
-      if (obj.kind === 'wp'){
-        markersLayer.removeLayer(obj.layer);
-        saveMarkers();
-      } else {
-        drawnItems.removeLayer(obj.layer);
-        removeSegLabels(obj.layer);
-        removeTotalLabel(obj.layer);
-        removeShapeLabel(obj.layer);
-        saveDraw();
-      }
-      refreshWaypointsUI();
-      return;
-    }
-
-    if (e.target.classList.contains('edit') && obj.kind === 'wp'){
-      openWaypointDetail(obj.layer);
-      return;
-    }
-
-    if (e.target.classList.contains('guide') && obj.kind === 'wp'){
-      setGuideTarget(obj.layer.options.id);
-      openSheet('compass');
-      return;
-    }
-  });
-
-  wpList.addEventListener('input', (e) => {
-    const item = e.target.closest('.item');
-    if (!item) return;
-    const idx   = parseInt(item.dataset.idx, 10);
-    const items = allItems();
-    const obj   = items[idx];
-    if (!obj) return;
-
-    if (e.target.classList.contains('wp-item-name')){
-      const val = e.target.value;
-      if (obj.kind === 'wp'){
-        obj.layer.options.name = val;
-        obj.layer.bindPopup(markerPopupHTML(obj.layer));
-        saveMarkers();
-      } else {
-        obj.layer._bhhName = val;
-        saveDraw();
-      }
-    }
-  });
-}
-
-// Waypoint details (notes + photo)
-let editingWP = null;
-const wpDetSheet     = document.getElementById('wpDetailSheet');
-const wpDetName      = document.getElementById('wpDetName');
-const wpDetType      = document.getElementById('wpDetType');
-const wpDetNotes     = document.getElementById('wpDetNotes');
-const wpPhotoInput   = document.getElementById('wpPhotoInput');
-const wpPhotoInfo    = document.getElementById('wpPhotoInfo');
-const wpPhotoPreview = document.getElementById('wpPhotoPreview');
-const wpPickPhotoBtn = document.getElementById('wpPickPhoto');
-const wpDetSaveBtn   = document.getElementById('wpDetSave');
-
 if (wpDetType){
   wpDetType.innerHTML = Object.entries(markerTypes).map(([key, cfg]) =>
     `<option value="${key}">${cfg.label}</option>`
@@ -2037,9 +1701,7 @@ if (wpDetSaveBtn){
     closeSheets();
   };
 }
-
 // [BHH: WAYPOINTS – UI HOOKS END]
-
 
 
 /*******************
@@ -2068,6 +1730,7 @@ const trkStatusEl = document.getElementById('trkStatus');
 const trkStartBtn = document.getElementById('trkStartStop');
 const trkClearBtn = document.getElementById('trkClear');
 const trkFollowEl = document.getElementById('trkFollow');
+const trkExportBtn = document.getElementById('trkExport');
 
 function loadTrack(){
   try {
@@ -2092,7 +1755,6 @@ function appendPoint(lat, lng, t){
       [lastPoint.lat, lastPoint.lng],
       [lat,          lng]
     );
-    // ignore jitter < 3m
     if (d < 3) return;
   }
   trackPoints.push(pt);
@@ -2229,6 +1891,9 @@ if (trkStartBtn){
 if (trkClearBtn){
   trkClearBtn.addEventListener('click', clearTrack);
 }
+if (trkExportBtn){
+  trkExportBtn.addEventListener('click', exportGPX);
+}
 
 loadTrack();
 // [BHH: TRACK END]
@@ -2308,6 +1973,8 @@ const coneAnchorRadios = Array.from(
 );
 
 (function restoreConeSettings() {
+  if (!coneToggle) return; // defensive if sheet not present
+
   coneToggle.checked = localStorage.getItem('cone_vis') === '1';
   coneWidth.value = localStorage.getItem('cone_w') || '60';
   coneScale.value = localStorage.getItem('cone_s') || '1';
@@ -2350,7 +2017,7 @@ function destPoint(lat, lng, bearingDeg, distM) {
 }
 
 function updateScentCone() {
-  if (!coneToggle.checked) {
+  if (!coneToggle || !coneToggle.checked) {
     if (map.hasLayer(scentConeLayer)) map.removeLayer(scentConeLayer);
     return;
   }
@@ -2388,6 +2055,7 @@ function updateScentCone() {
 }
 
 function persistCone() {
+  if (!coneToggle) return;
   localStorage.setItem('cone_vis', coneToggle.checked ? '1' : '0');
   localStorage.setItem('cone_w', coneWidth.value);
   localStorage.setItem('cone_s', coneScale.value);
@@ -2397,18 +2065,20 @@ function persistCone() {
   localStorage.setItem('cone_a', anch);
 }
 
-coneToggle.onchange =
-  () => { persistCone(); updateScentCone(); };
-coneWidth.oninput =
-  () => { persistCone(); updateScentCone(); };
-coneScale.oninput =
-  () => { persistCone(); updateScentCone(); };
-coneAnchorRadios.forEach(r =>
-  r.addEventListener('change', () => {
-    persistCone();
-    updateScentCone();
-  })
-);
+if (coneToggle) {
+  coneToggle.onchange =
+    () => { persistCone(); updateScentCone(); };
+  coneWidth.oninput =
+    () => { persistCone(); updateScentCone(); };
+  coneScale.oninput =
+    () => { persistCone(); updateScentCone(); };
+  coneAnchorRadios.forEach(r =>
+    r.addEventListener('change', () => {
+      persistCone();
+      updateScentCone();
+    })
+  );
+}
 
 if (btnWind) {
   btnWind.onclick = () => {
@@ -2653,7 +2323,6 @@ function updateCompassDial() {
   const h = deviceHeading;
   const rotation = (h == null ? 0 : h);  // 0° = tip straight up (N)
 
-  // Must match CSS initial transform: translate(-50%, -100%)
   needle.style.transform =
     'translate(-50%, -100%) rotate(' + rotation + 'deg)';
 }
@@ -2661,13 +2330,15 @@ function updateCompassDial() {
 function updateCompassReadout() {
   const h = deviceHeading;
 
-  if (h == null) {
-    compHeadingText.textContent = 'Heading: --';
-  } else {
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const card = dirs[Math.round(h / 45) % 8];
-    compHeadingText.textContent =
-      'Heading: ' + Math.round(h) + '° ' + card;
+  if (compHeadingText) {
+    if (h == null) {
+      compHeadingText.textContent = 'Heading: --';
+    } else {
+      const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const card = dirs[Math.round(h / 45) % 8];
+      compHeadingText.textContent =
+        'Heading: ' + Math.round(h) + '° ' + card;
+    }
   }
 
   updateGuideLine();
@@ -2678,12 +2349,9 @@ function updateCompassReadout() {
 function onDeviceOrientation(e) {
   let hdg = null;
 
-  // iOS Safari: webkitCompassHeading is already compass-style (0° = N, clockwise)
   if (typeof e.webkitCompassHeading === 'number') {
     hdg = e.webkitCompassHeading;
   } else if (typeof e.alpha === 'number') {
-    // Generic: convert alpha (0–360 clockwise) to compass heading:
-    // This mapping works consistently on Android Chrome in your tests:
     hdg = (360 - e.alpha) % 360;
   }
 
@@ -2698,30 +2366,30 @@ async function startCompass() {
   if (compassStarted) return;
   compassStarted = true;
 
-  // iOS permission gate
   try {
     if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
       const res = await DeviceOrientationEvent.requestPermission();
       if (res !== 'granted') {
-        compHeadingText.textContent = 'Heading: permission denied';
+        if (compHeadingText) {
+          compHeadingText.textContent = 'Heading: permission denied';
+        }
         return;
       }
     }
-  } catch (_) {
-    // Non-iOS: ignore
-  }
+  } catch (_) {}
 
   if ('ondeviceorientationabsolute' in window) {
     window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
   } else if ('ondeviceorientation' in window) {
     window.addEventListener('deviceorientation', onDeviceOrientation, true);
   } else {
-    compHeadingText.textContent = 'Heading: not supported';
+    if (compHeadingText) {
+      compHeadingText.textContent = 'Heading: not supported';
+    }
     return;
   }
 
-  // Keep origin updated for guide line
   if (navigator.geolocation && !gpsWatchId) {
     ensureGPSWatch(false);
   }
@@ -2917,7 +2585,7 @@ function openSheet(which) {
   if (which === 'compass') {
     rebuildCompassTargets();
     updateCompassReadout();
-    startCompass();   // ensure compass is running when sheet opens
+    startCompass();
   }
 
   if (which === 'almanac') {
@@ -3051,439 +2719,16 @@ ovlTrack.onchange =
 
 
 /*******************
- * WAYPOINTS manager UI hooks (fly/edit/guide/delete) + details sheet
- *******************/
-// [BHH: WAYPOINTS – UI HOOKS START]
-const wpList = document.getElementById('wpList');
-const wpSearch = document.getElementById('wpSearch');
-const wpType = document.getElementById('wpType');
-const wpTypePreview = document.getElementById('wpTypePreview');
-
-if (wpType && wpTypePreview){
-  const syncTypePreview = () => {
-    wpTypePreview.innerHTML = pinHTML(wpType.value || 'stand');
-  };
-  wpType.addEventListener('change', syncTypePreview);
-  syncTypePreview();
-}
-
-const wpName = document.getElementById('wpName');
-
-const wpAddCenterBtn = document.getElementById('wpAddCenter');
-const wpAddGPSBtn = document.getElementById('wpAddGPS');
-
-if (wpAddCenterBtn) {
-  wpAddCenterBtn.onclick = () => {
-    const t = wpType.value;
-    const n = wpName.value || undefined;
-    addMarker(map.getCenter(), t, n);
-    refreshWaypointsUI();
-    wpName.value = '';
-  };
-}
-
-if (wpAddGPSBtn) {
-  wpAddGPSBtn.onclick = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation not supported');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const t = wpType.value;
-        const n = wpName.value || undefined;
-        addMarker(
-          [pos.coords.latitude, pos.coords.longitude],
-          t, n
-        );
-        refreshWaypointsUI();
-        wpName.value = '';
-      },
-      err => alert('Location error: ' + err.message),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  };
-}
-
-function gatherShapes() {
-  const arr = [];
-  drawnItems.eachLayer(l => {
-    const type = featureTypeFromLayer(l);
-    const center =
-      l.getBounds
-        ? l.getBounds().getCenter()
-        : (l.getLatLng ? l.getLatLng() : map.getCenter());
-
-    // Ensure metrics are up to date for area-type shapes
-    if (l instanceof L.Polygon || l instanceof L.Rectangle || l instanceof L.Circle) {
-      updateShapeMetrics(l);
-    }
-
-    arr.push({
-      kind: 'shape',
-      type,
-      name: l._bhhName || defaultShapeName(type),
-      layer: l,
-      center,
-      metrics: l._bhhMetrics || null
-    });
-  });
-  return arr;
-}
-
-
-function getWaypoints() {
-  const pts = [];
-  markersLayer.eachLayer(m => {
-    const { lat, lng } = m.getLatLng();
-    pts.push({
-      kind: 'wp',
-      id: m.options.id,
-      name: m.options.name,
-      type: m.options.type,
-      lat,
-      lng,
-      layer: m
-    });
-  });
-  return pts;
-}
-
-function iconHTMLFor(item){
-  // Shapes (lines/areas) – simple geometric icons
-  if (item.kind === 'shape'){
-    const shapeChar = ({
-      polyline:'📏',
-      polygon:'⬠',
-      rectangle:'▭',
-      circle:'◯'
-    })[item.type] || '⬣';
-
-    return `<div style="font-size:18px;">${shapeChar}</div>`;
-  }
-
-  // Waypoints – reuse the exact same SVG pins as the map
-  const type = item.type || 'default';
-  const svg  = ICON_SVGS[type] || ICON_SVGS.default;
-
-  // Scale down a bit so it fits nicely in the list
-  return `
-    <div class="wp-pin wp-${type}"
-         style="transform:scale(0.7);transform-origin:left center;">
-      ${svg}
-    </div>
-  `;
-}
-
-
-function labelFor(item){
-  if (item.kind === 'shape'){
-    return ({
-      polyline:'Line',
-      polygon:'Area',
-      rectangle:'Plot',
-      circle:'Circle'
-    })[item.type] || 'Shape';
-  }
-
-  const labelByType = {
-    stand:'Tree Stand',
-    blind:'Ground Blind',
-    buck:'Buck',
-    doe:'Doe',
-    blood:'Blood Trail',
-    trail:'Trail',
-    camera:'Trail Camera',
-    scrape:'Scrape',
-    rub:'Rub',
-    food:'Food Plot',
-    water:'Water Source',
-    camp:'Camp',
-    truck:'Truck / Parking',
-    hazard:'Hazard'
-  };
-
-  return labelByType[item.type] || 'Marker';
-}
-
-
-function allItems() {
-  return [...getWaypoints(), ...gatherShapes()];
-}
-
-function refreshWaypointsUI() {
-  if (!wpList) return;
-
-  const q = (wpSearch.value || '').toLowerCase();
-  const items = allItems().filter(w =>
-    !q ||
-    (w.name && w.name.toLowerCase().includes(q)) ||
-    (labelFor(w).toLowerCase().includes(q))
-  );
-
-      wpList.innerHTML =
-    items.length === 0
-      ? '<p class="tag" style="margin-top:8px">No items yet.</p>'
-      : items.map((w,i) => {
-          let meta = '';
-          if (w.kind === 'shape' && w.metrics){
-            if (w.type === 'circle'){
-              meta = `<div class="meta">${w.metrics.radiusText} • ${w.metrics.areaText}</div>`;
-            } else {
-              meta = `<div class="meta">${w.metrics.perimeterText} • ${w.metrics.areaText}</div>`;
-            }
-          }
-
-          // icon: pins for waypoints, simple badge for shapes
-          const iconHTML =
-            w.kind === 'wp'
-              ? pinHTML(w.type || 'default')
-              : `<div class="shape-icon">${emojiFor(w)}</div>`;
-
-          const safeName =
-            (w.name || '')
-              .replace(/&/g,'&amp;')
-              .replace(/"/g,'&quot;');
-
-          const wpActions =
-            w.kind === 'wp'
-              ? `
-                <button class="btn fly">Fly</button>
-                <button class="btn guide">Guide</button>
-                <button class="btn edit">Edit</button>
-                <button class="btn danger del">Delete</button>
-                `
-              : `
-                <button class="btn fly">Fly</button>
-                <button class="btn danger del">Delete</button>
-                `;
-
-          return `
-            <div class="item" data-kind="${w.kind}" data-idx="${i}">
-              <div class="icon-cell">
-                ${iconHTML}
-              </div>
-              <div class="name-cell">
-                <input class="wp-name-input" type="text" value="${safeName}"/>
-                ${meta}
-              </div>
-              <div class="actions-col">
-                ${wpActions}
-              </div>
-            </div>
-          `;
-        }).join('');
-
-
-
-
-  rebuildCompassTargets();
-}
-
-if (wpSearch) {
-  wpSearch.addEventListener('input', refreshWaypointsUI);
-}
-
-if (wpList) {
-  wpList.addEventListener('click', (e) => {
-    const item = e.target.closest('.item');
-    if (!item) return;
-
-    const idx = parseInt(item.dataset.idx, 10);
-    const items = allItems();
-    const obj = items[idx];
-    if (!obj) return;
-
-    // Fly to item
-    if (e.target.classList.contains('fly')) {
-      if (obj.kind === 'wp') {
-        map.setView([obj.lat, obj.lng], Math.max(map.getZoom(), 16));
-        obj.layer.openPopup();
-      } else {
-        if (obj.layer.getBounds) {
-          map.fitBounds(obj.layer.getBounds(), { maxZoom: 18 });
-        } else if (obj.center) {
-          map.setView(obj.center, 17);
-        }
-      }
-      return;
-    }
-
-    // Delete item
-    if (e.target.classList.contains('del')) {
-      if (obj.kind === 'wp') {
-        markersLayer.removeLayer(obj.layer);
-        saveMarkers();
-      } else {
-        // remove shape + its labels + save
-        drawnItems.removeLayer(obj.layer);
-        removeSegLabels(obj.layer);
-        removeTotalLabel(obj.layer);
-        removeShapeLabel(obj.layer);
-        saveDraw();
-      }
-      refreshWaypointsUI();
-      return;
-    }
-
-    // Edit waypoint details
-    if (e.target.classList.contains('edit') && obj.kind === 'wp') {
-      openWaypointDetail(obj.layer);
-      return;
-    }
-
-    // Guide to waypoint
-    if (e.target.classList.contains('guide') && obj.kind === 'wp') {
-      setGuideTarget(obj.layer.options.id);
-      openSheet('compass');
-      return;
-    }
-  });
-
-  wpList.addEventListener('input', (e) => {
-    const item = e.target.closest('.item');
-    if (!item) return;
-    const idx = parseInt(item.dataset.idx, 10);
-    const items = allItems();
-    const obj = items[idx];
-    if (!obj) return;
-
-    if (e.target.type === 'text') {
-      const val = e.target.value;
-      if (obj.kind === 'wp') {
-        obj.layer.options.name = val;
-        obj.layer.bindPopup(markerPopupHTML(obj.layer));
-        saveMarkers();
-      } else {
-        obj.layer._bhhName = val;
-        saveDraw();
-      }
-    }
-  });
-}
-
-// Waypoint details (notes + photo)
-let editingWP = null;
-const wpDetSheet = document.getElementById('wpDetailSheet');
-const wpDetName = document.getElementById('wpDetName');
-const wpDetType = document.getElementById('wpDetType');
-const wpDetNotes = document.getElementById('wpDetNotes');
-const wpPhotoInput = document.getElementById('wpPhotoInput');
-const wpPhotoInfo = document.getElementById('wpPhotoInfo');
-const wpPhotoPreview = document.getElementById('wpPhotoPreview');
-const wpPickPhotoBtn = document.getElementById('wpPickPhoto');
-const wpDetSaveBtn = document.getElementById('wpDetSave');
-
-if (wpPickPhotoBtn) {
-  wpPickPhotoBtn.onclick = () => wpPhotoInput.click();
-}
-
-function openWaypointDetail(marker) {
-  editingWP = marker;
-  wpDetName.value = marker.options.name || '';
-  wpDetType.value = marker.options.type || 'stand';
-  wpDetNotes.value = marker.options.notes || '';
-
-  if (marker.options.photo) {
-    wpPhotoInfo.textContent =
-      `${Math.round(marker.options.photo.length / 1024)} KB`;
-    wpPhotoPreview.innerHTML =
-      `<img src="${marker.options.photo}" alt="photo" style="max-width:100%;border-radius:10px;border:1px solid #203325"/>`;
-  } else {
-    wpPhotoInfo.textContent = 'No photo';
-    wpPhotoPreview.innerHTML = '';
-  }
-
-  openSheet('wpDetail');
-}
-
-function readAndCompressImage(file, maxDim = 1280, quality = 0.82) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      let { width: w, height: h } = img;
-      const scale = Math.min(1, maxDim / Math.max(w, h));
-      const cw = Math.round(w * scale);
-      const ch = Math.round(h * scale);
-
-      const c = document.createElement('canvas');
-      c.width = cw;
-      c.height = ch;
-      const ctx = c.getContext('2d');
-      ctx.drawImage(img, 0, 0, cw, ch);
-
-      const url = c.toDataURL('image/jpeg', quality);
-      if (url.length / 1024 > 1500) {
-        return reject('Image too large after compression; try a smaller image.');
-      }
-      resolve(url);
-    };
-    img.onerror = reject;
-
-    const fr = new FileReader();
-    fr.onload = () => { img.src = fr.result; };
-    fr.onerror = reject;
-    fr.readAsDataURL(file);
-  });
-}
-
-if (wpPhotoInput) {
-  wpPhotoInput.addEventListener('change', async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file || !editingWP) return;
-
-    try {
-      const dataUrl = await readAndCompressImage(file, 1280, 0.82);
-      editingWP.options.photo = dataUrl;
-      wpPhotoInfo.textContent =
-        `${Math.round(dataUrl.length / 1024)} KB`;
-      wpPhotoPreview.innerHTML =
-        `<img src="${dataUrl}" alt="photo" style="max-width:100%;border-radius:10px;border:1px solid #203325"/>`;
-      saveMarkers();
-      editingWP.bindPopup(markerPopupHTML(editingWP));
-    } catch (err) {
-      alert('Photo failed: ' + err);
-    }
-
-    e.target.value = '';
-  });
-}
-
-if (wpDetSaveBtn) {
-  wpDetSaveBtn.onclick = () => {
-    if (!editingWP) return;
-
-    editingWP.options.name = wpDetName.value || editingWP.options.name;
-    editingWP.options.type = wpDetType.value;
-    editingWP.options.notes = wpDetNotes.value || '';
-
-    const cfg =
-      markerTypes[editingWP.options.type] ||
-      { icon: makePinIcon('default') };
-
-    editingWP.setIcon(cfg.icon);
-    editingWP.bindPopup(markerPopupHTML(editingWP));
-    saveMarkers();
-    refreshWaypointsUI();
-    closeSheets();
-  };
-}
-
-// [BHH: WAYPOINTS – UI HOOKS END]
-
-
-/*******************
  * STUBS for score/moon/info (safe no-op implementations)
  *******************/
 function setInfoVisible(visible) {
-  // Placeholder: if you had a field info panel, toggle visibility here.
   localStorage.setItem('ui_info_visible', visible ? '1' : '0');
 }
 
 function renderMoon() {
-  // Placeholder: hook your moon phase rendering here if desired.
+  // hook moon sheet in sun-moon.js if you want
 }
 
 function computeHuntScore() {
-  // Placeholder: hook your hunt score calculation + UI updates here.
+  // hook hunt score in hunt-score.js if you want
 }
