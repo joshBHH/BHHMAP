@@ -2370,35 +2370,32 @@ function getWaypoints() {
   return pts;
 }
 
-function emojiFor(item){
+function iconHTMLFor(item){
+  // Shapes (lines/areas) – simple geometric icons
   if (item.kind === 'shape'){
-    return ({
+    const shapeChar = ({
       polyline:'📏',
       polygon:'⬠',
       rectangle:'▭',
       circle:'◯'
     })[item.type] || '⬣';
+
+    return `<div style="font-size:18px;">${shapeChar}</div>`;
   }
 
-  const iconByType = {
-    stand:'🎯',
-    blind:'🏕️',
-    buck:'🦌',
-    doe:'🦌',
-    blood:'🩸',
-    trail:'🥾',
-    camera:'📷',
-    scrape:'🦌',
-    rub:'🪵',
-    food:'🌾',
-    water:'💧',
-    camp:'🏕️',
-    truck:'🚙',
-    hazard:'⚠️'
-  };
+  // Waypoints – reuse the exact same SVG pins as the map
+  const type = item.type || 'default';
+  const svg  = ICON_SVGS[type] || ICON_SVGS.default;
 
-  return iconByType[item.type] || '📍';
+  // Scale down a bit so it fits nicely in the list
+  return `
+    <div class="wp-pin wp-${type}"
+         style="transform:scale(0.7);transform-origin:left center;">
+      ${svg}
+    </div>
+  `;
 }
+
 
 function labelFor(item){
   if (item.kind === 'shape'){
@@ -2445,40 +2442,64 @@ function refreshWaypointsUI() {
     (labelFor(w).toLowerCase().includes(q))
   );
 
-  wpList.innerHTML =
+    wpList.innerHTML =
     items.length === 0
       ? '<p class="tag" style="margin-top:8px">No items yet.</p>'
-      : items.map((w, i) => {
-        let meta = '';
-        if (w.kind === 'shape' && w.metrics) {
-          if (w.type === 'circle') {
-            meta = `<div class="meta">${w.metrics.radiusText} • ${w.metrics.areaText}</div>`;
-          } else {
-            meta = `<div class="meta">${w.metrics.perimeterText} • ${w.metrics.areaText}</div>`;
+      : items.map((w,i) => {
+          let meta = '';
+          if (w.kind === 'shape' && w.metrics){
+            if (w.type === 'circle'){
+              meta = `<div class="meta">${w.metrics.radiusText} • ${w.metrics.areaText}</div>`;
+            } else {
+              meta = `<div class="meta">${w.metrics.perimeterText} • ${w.metrics.areaText}</div>`;
+            }
           }
-        }
 
-        return `
-        <div class="item" data-kind="${w.kind}" data-idx="${i}">
-          <div class="emoji">${emojiFor(w)}</div>
-          <div class="name">
-            <input type="text"
-       style="max-width: 160px; width: 100%;"
-       value="${(w.name || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"/>
+          const safeName =
+            (w.name || '')
+              .replace(/&/g,'&amp;')
+              .replace(/"/g,'&quot;');
 
-            ${meta}
-          </div>
-          <div class="actions"><button class="btn fly">Fly</button></div>
-          ${
-          w.kind === 'wp'
-            ? '<div class="actions"><button class="btn guide">Guide</button></div><div class="actions"><button class="btn edit">Edit</button></div>'
-            : '<div></div><div></div>'
-        }
-          <div class="actions">
-            <button class="btn danger del">Delete</button>
-          </div>
-        </div>`;
-      }).join('');
+          return `
+          <div class="item"
+               data-kind="${w.kind}"
+               data-idx="${i}"
+               style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between;">
+
+            <!-- LEFT: icon + text -->
+            <div class="left"
+                 style="display:flex;gap:8px;align-items:flex-start;flex:1;min-width:0;">
+              <div class="icon">
+                ${iconHTMLFor(w)}
+              </div>
+              <div class="text" style="flex:1;min-width:0;">
+                <div class="label" style="font-size:12px;color:#9ca3af;">
+                  ${labelFor(w)}
+                </div>
+                <input type="text"
+                       value="${safeName}"
+                       style="max-width:100%;width:100%;margin-top:2px;"/>
+                ${meta}
+              </div>
+            </div>
+
+            <!-- RIGHT: buttons -->
+            <div class="right"
+                 style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+              <div class="top-actions"
+                   style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+                <button class="btn fly">Fly</button>
+                ${
+                  w.kind === 'wp'
+                    ? '<button class="btn guide">Guide</button><button class="btn edit">Edit</button>'
+                    : ''
+                }
+              </div>
+              <button class="btn danger del">Delete</button>
+            </div>
+          </div>`;
+        }).join('');
+
 
 
   rebuildCompassTargets();
