@@ -76,7 +76,6 @@
       </div>
     </div>
 
-    <!-- [BHH: UI – INFO PANEL START] -->
     <!-- Field Info panel (hidden by default; draggable) -->
     <section class="panel" id="infoPanel" style="display: none;">
       <h3 id="infoHandle">📋 Field Info</h3>
@@ -101,10 +100,8 @@
         Tip: start the Track Recorder to populate distance &amp; duration.
       </p>
     </section>
-    <!-- [BHH: UI – INFO PANEL END] -->
 
-    <!-- [BHH: UI – BOTTOM MENU START] -->
-    <!-- Bottom main menu (no Radar button) -->
+    <!-- Bottom main menu -->
     <nav class="main-menu" id="mainMenu">
       <button id="menuWind" class="wind-btn">
         <span id="windText">Wind: --</span>
@@ -114,7 +111,7 @@
       <button id="menuShop">Shop Gear</button>
       <button id="menuLocate">Locate Me</button>
 
-      <!-- Hidden file input for imports (unchanged) -->
+      <!-- Hidden file input for imports -->
       <input
         type="file"
         id="fileImport"
@@ -122,34 +119,27 @@
         style="display: none;"
       />
     </nav>
-    <!-- [BHH: UI – BOTTOM MENU END] -->
 
     <!-- Shared backdrop for sheets -->
     <div class="backdrop" id="sheetBackdrop"></div>
 
-    <!-- [BHH: UI – SHEETS START] -->
-    <!-- Basemap & Overlays sheet (includes Waterfowl Zones toggle) -->
+    <!-- Basemap & Overlays sheet -->
     <div class="sheet" id="basemapSheet" aria-hidden="true">
       <div class="grab"></div>
       <h4>Basemap</h4>
-      <div class="option" data-radio="basemap" data-value="basic">
-        <span>Basic</span
-        ><input type="radio" name="basemap" value="basic" />
+      <div class="option">
+        <span>Basic</span><input type="radio" name="basemap" value="basic" />
       </div>
-      <div class="option" data-radio="basemap" data-value="satellite">
-        <span>Satellite</span
-        ><input type="radio" name="basemap" value="satellite" />
+      <div class="option">
+        <span>Satellite</span><input type="radio" name="basemap" value="satellite" />
       </div>
-      <div class="option" data-radio="basemap" data-value="topo">
-        <span>Topographic</span
-        ><input type="radio" name="basemap" value="topo" />
+      <div class="option">
+        <span>Topographic</span><input type="radio" name="basemap" value="topo" />
       </div>
-      <div class="option" data-radio="basemap" data-value="hybrid">
-        <span>Hybrid</span
-        ><input type="radio" name="basemap" value="hybrid" />
+      <div class="option">
+        <span>Hybrid</span><input type="radio" name="basemap" value="hybrid" />
       </div>
 
-      <!-- State selector (UI only; loading will come later) -->
       <h4 style="margin-top: 10px;">State</h4>
       <div class="option" style="gap: 10px;">
         <span>Select state</span>
@@ -197,7 +187,6 @@
     <div class="sheet" id="toolsSheet" aria-hidden="true">
       <div class="grab"></div>
 
-      <!-- Drawing tools section in Tools sheet -->
       <h4>Drawing</h4>
       <div class="row" style="gap:6px; flex-wrap:wrap;">
         <button class="btn" id="drawLineBtn">Line</button>
@@ -211,43 +200,36 @@
       
       <h4>Tools</h4>
 
-      <!-- Waypoints manager -->
       <div class="option" id="toolWaypoints">
         <span>Waypoints</span>
         <button class="btn">Open</button>
       </div>
 
-      <!-- Track recorder -->
       <div class="option" id="toolTrack">
         <span>Track</span>
         <button class="btn">Open</button>
       </div>
 
-      <!-- Compass -->
       <div class="option" id="toolCompass">
         <span>Compass</span>
         <button class="btn">Open</button>
       </div>
 
-      <!-- State selector (moved here from bottom bar) -->
       <div class="option" id="toolState">
         <span>Change State</span>
         <button class="btn" id="menuState">Open</button>
       </div>
 
-      <!-- Export -->
       <div class="option" id="toolExport">
         <span>Export data</span>
         <button class="btn" id="btnExport">Export</button>
       </div>
 
-      <!-- Import -->
       <div class="option" id="toolImport">
         <span>Import data</span>
         <button class="btn" id="btnImport">Import</button>
       </div>
 
-      <!-- Delete mode toggle -->
       <div class="option">
         <span>Delete mode</span>
         <input id="toolDeleteToggle" type="checkbox" />
@@ -259,44 +241,17 @@
     </div>
 
     <!-- Waypoints + Shapes manager sheet -->
-
-<div class="wp-type-row">
-  <select id="wpType"> … </select>
-  <div id="wpTypePreview"></div>
-</div>
-
-    
     <div class="sheet" id="waypointsSheet" aria-hidden="true">
       <div class="grab"></div>
       <h4>Waypoints &amp; Shapes</h4>
       <div class="content">
-        <div
-          style="
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 8px;
-          "
-        >
-          <select id="wpType">
-            <option value="buck">Buck</option>
-            <option value="doe">Doe</option>
-            <option value="blood">Blood Trail</option>
-            <option value="trail">Trail</option>
-            <option value="stand">Tree Stand</option>
-            <option value="blind">Ground Blind</option>
-            <option value="scrape">Scrape</option>
-            <option value="rub">Rub</option>
-            <option value="camera">Trail Camera</option>
-            <option value="food">Food Plot</option>
-            <option value="water">Water Source</option>
-            <option value="camp">Camp</option>
-            <option value="truck">Truck / Parking</option>
-            <option value="hazard">Hazard</option>
-          </select>
-
-          <input id="wpName" type="text" placeholder="Name (optional)" />
+        <div class="wp-type-row" style="margin-bottom:8px;">
+          <select id="wpType"></select>
+          <div id="wpTypePreview"></div>
         </div>
+
+        <input id="wpName" type="text" placeholder="Name (optional)" style="margin-bottom:8px;" />
+
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
           <button class="btn" id="wpAddCenter">Add at Map Center</button>
           <button class="btn" id="wpAddGPS">Add from Camera/GPS</button>
@@ -324,14 +279,7 @@
           "
         >
           <input id="wpDetName" type="text" placeholder="Name" />
-          <select id="wpDetType">
-            <option value="stand">Tree Stand</option>
-            <option value="feeder">Feeder</option>
-            <option value="camera">Trail Camera</option>
-            <option value="scrape">Scrape</option>
-            <option value="rub">Rub</option>
-            <option value="water">Water Source</option>
-          </select>
+          <select id="wpDetType"></select>
         </div>
         <textarea
           id="wpDetNotes"
@@ -509,7 +457,6 @@
         </label>
       </div>
 
-      <!-- Indiana — now enabled -->
       <div class="option">
         <label
           style="
@@ -524,7 +471,6 @@
         </label>
       </div>
 
-      <!-- Placeholders for future states -->
       <div class="option" style="opacity: 0.6; cursor: not-allowed;">
         <label
           style="
@@ -579,8 +525,7 @@
       </div>
 
       <p class="tag" style="padding: 12px 16px;">
-        For now, overlays are tuned for Ohio. Selecting other states is disabled
-        so your map doesn’t break.
+        For now, overlays are tuned for Ohio & Indiana.
       </p>
     </div>
 
@@ -676,10 +621,10 @@
         </p>
       </div>
     </div>
-    <!-- [BHH: UI – SHEETS END] -->
+
   </div>
 
-  <!-- Turf.js for accurate area measurements -->
+  <!-- Turf.js for accurate area measurements (if you hook it up later) -->
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
   <!-- BHH main logic -->
