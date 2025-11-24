@@ -973,89 +973,24 @@ const ICON_SVGS = {
     </svg>
   `,
 
-       buck: `
-    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- head + neck silhouette -->
-      <path
-        d="
-          M12 4
-          Q10.6 4 9.7 4.7
-          L8.4 5.8
-          L7.0 5.1
-          L6.0 5.8
-          L7.1 7.7
-          Q7.7 8.8 7.4 10.1
-          L6.6 12.7
-          Q6.0 14.8 7.3 16.5
-          Q8.9 18.6 12 18.6
-          Q15.1 18.6 16.7 16.5
-          Q18.0 14.8 17.4 12.7
-          L16.6 10.1
-          Q16.3 8.8 16.9 7.7
-          L18.0 5.8
-          L17.0 5.1
-          L15.6 5.8
-          L14.3 4.7
-          Q13.4 4 12 4 Z
-        "
-        fill="var(--wp-pin-icon)"
-      />
-      <!-- antlers -->
-      <path
-        d="
-          M9.6 4.4
-          L8.7 2.9
-          Q8.2 2.1 7.3 2.0
-          L6.1 2.0
-
-          M9.2 5.3
-          L7.8 4.4
-
-          M14.4 4.4
-          L15.3 2.9
-          Q15.8 2.1 16.7 2.0
-          L17.9 2.0
-
-          M14.8 5.3
-          L16.2 4.4
-        "
-        fill="none"
-        stroke="var(--wp-pin-icon)"
-        stroke-width="1.4"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
+       // ⬇⬇ NEW BUCK ICON (using your SVG file) ⬇⬇
+  buck: `
+    <img
+      src="Icons/bhh-buck.svg"
+      class="wp-img-icon"
+      alt="Buck"
+      loading="lazy"
+    />
   `,
 
+  // ⬇⬇ NEW DOE ICON (using your SVG file) ⬇⬇
   doe: `
-    <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- head + neck silhouette (same base as buck, no antlers) -->
-      <path
-        d="
-          M12 4.3
-          Q10.7 4.3 9.8 5.0
-          L8.6 5.9
-          L7.2 5.2
-          L6.2 5.9
-          L7.3 7.7
-          Q7.9 8.9 7.6 10.2
-          L7.0 12.4
-          Q6.6 14.3 7.7 15.9
-          Q9.0 17.8 12 17.8
-          Q15.0 17.8 16.3 15.9
-          Q17.4 14.3 17.0 12.4
-          L16.4 10.2
-          Q16.1 8.9 16.7 7.7
-          L17.8 5.9
-          L16.8 5.2
-          L15.4 5.9
-          L14.2 5.0
-          Q13.3 4.3 12 4.3 Z
-        "
-        fill="var(--wp-pin-icon)"
-      />
-    </svg>
+    <img
+      src="Icons/bhh-doe.svg"
+      class="wp-img-icon"
+      alt="Doe"
+      loading="lazy"
+    />
   `,
 
 
