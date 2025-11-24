@@ -451,7 +451,6 @@ body,
 
 /* Hide compass sheet shortcut on desktop */
 @media (pointer: fine) {
-  #compassWidget,
   #toolCompass {
     display: none;
   }
