@@ -1061,21 +1061,25 @@ const ICON_SVGS = {
     </svg>
   `,
 
-  food: `
+    food: `
     <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
+      <!-- Corn kernels (yellow) -->
       <path d="M12 17 Q13 14 13 11 Q13 8 12 6
                Q11 8 11 11 Q11 14 12 17 Z"
-        fill="var(--wp-pin-icon)"/>
+        fill="#facc15"/>
+      <!-- Left green husk -->
       <path d="M9 10 Q6.7 10.1 6.1 12
                Q7.8 12.2 9 11.3"
-        fill="none" stroke="#0f172a" stroke-width="1.4"
+        fill="none" stroke="#22c55e" stroke-width="1.4"
         stroke-linecap="round"/>
+      <!-- Right green husk -->
       <path d="M15 10 Q17.3 10.1 17.9 12
                Q16.2 12.2 15 11.3"
-        fill="none" stroke="#0f172a" stroke-width="1.4"
+        fill="none" stroke="#22c55e" stroke-width="1.4"
         stroke-linecap="round"/>
     </svg>
   `,
+
 
   water: `
     <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
