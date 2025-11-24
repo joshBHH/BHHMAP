@@ -390,21 +390,13 @@ body,
   cursor: grabbing;
 }
 
-/* Compass widget – show on phones/tablets, hide on big desktop screens */
+/* Compass widget – show by default */
 #compassWidget {
   position: fixed;
   bottom: 90px;
   right: 12px;
   z-index: 1300;
-  display: block;
-}
-
-/* Hide compass sheet shortcut on desktop */
-@media (pointer: fine) {
-  #compassWidget,
-  #toolCompass {
-    display: none;
-  }
+  display: block !important;  /* <- force it visible */
 }
 
 
