@@ -494,7 +494,7 @@ body,
 /* Per-type color accents */
 .wp-pin.wp-blood  { --wp-pin-icon: #ef4444; }
 .wp-pin.wp-hazard { --wp-pin-icon: #f97316; }
-.wp-pin.wp-water  { --wp-pin-icon: #22c55e; }
+.wp-pin.wp-water  { --wp-pin-icon: #3b82f6; }
 .wp-pin.wp-camp,
 .wp-pin.wp-truck  { --wp-pin-icon: #e5e7eb; }
 .wp-pin.wp-buck,
