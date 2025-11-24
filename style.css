@@ -399,12 +399,6 @@ body,
   display: block;
 }
 
-/* Hide on large desktop viewports only */
-@media (min-width: 1100px) {
-  #compassWidget {
-    display: none;
-  }
-}
 
 .compass-ring {
   position: relative;
