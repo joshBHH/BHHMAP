@@ -973,27 +973,6 @@ const ICON_SVGS = {
     </svg>
   `,
 
-       // ⬇⬇ NEW BUCK ICON (using your SVG file) ⬇⬇
-  buck: `
-    <img
-      src="Icons/bhh-buck.svg"
-      class="wp-img-icon"
-      alt="Buck"
-      loading="lazy"
-    />
-  `,
-
-  // ⬇⬇ NEW DOE ICON (using your SVG file) ⬇⬇
-  doe: `
-    <img
-      src="Icons/bhh-doe.svg"
-      class="wp-img-icon"
-      alt="Doe"
-      loading="lazy"
-    />
-  `,
-
-
 
   blood: `
     <svg viewBox="0 0 24 24" class="wp-svg" xmlns="http://www.w3.org/2000/svg">
@@ -1146,10 +1125,18 @@ const ICON_SVGS = {
 /* ---------- MARKER HELPERS ---------- */
 
 // HTML used both on map and inside the waypoint list
+// HTML used both on map and inside the waypoint list
 function markerIconHTML(type) {
+  // Buck & Doe: empty div, shape comes from CSS mask
+  if (type === 'buck' || type === 'doe') {
+    return `<div class="wp-pin wp-${type}"></div>`;
+  }
+
+  // All other markers still use the inline SVGs
   const svg = ICON_SVGS[type] || ICON_SVGS.default;
   return `<div class="wp-pin wp-${type}">${svg}</div>`;
 }
+
 
 
 
