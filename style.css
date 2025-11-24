@@ -507,6 +507,29 @@ body,
 .wp-pin.wp-camera,
 .wp-pin.wp-food   { --wp-pin-icon: #f97316; }
 
+/* Buck / Doe as solid orange silhouettes (no white box) */
+.wp-pin.wp-buck,
+.wp-pin.wp-doe {
+  background-color: var(--wp-pin-icon);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* Use your actual files & paths */
+.wp-pin.wp-buck {
+  -webkit-mask-image: url('Icons/bhh-buck.svg');
+  mask-image: url('Icons/bhh-buck.svg');
+}
+
+.wp-pin.wp-doe {
+  -webkit-mask-image: url('Icons/bhh-doe.svg');
+  mask-image: url('Icons/bhh-doe.svg');
+}
+
 
 /* Waypoints list */
 .wp-list {
