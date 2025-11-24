@@ -449,13 +449,7 @@ body,
   filter: drop-shadow(0 1px 3px rgba(0,0,0,.8));
 }
 
-/* Hide compass sheet shortcut on desktop */
-@media (pointer: fine) {
-  #compassWidget,
-  #toolCompass {
-    display: none;
-  }
-}
+
 
 /* Waypoint pin icons */
 .wp-pin {
