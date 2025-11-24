@@ -481,6 +481,16 @@ body,
   height: 100%;
 }
 
+/* For external SVG image icons (buck / doe) */
+.wp-pin img.wp-img-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.75));
+}
+
+
 /* Per-type color accents */
 .wp-pin.wp-blood  { --wp-pin-icon: #ef4444; }
 .wp-pin.wp-hazard { --wp-pin-icon: #f97316; }
