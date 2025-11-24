@@ -1147,15 +1147,10 @@ const ICON_SVGS = {
 
 // HTML used both on map and inside the waypoint list
 function markerIconHTML(type) {
-  // Buck & Doe use your external SVGs as a mask, so no inline SVG here
-  if (type === 'buck' || type === 'doe') {
-    return `<div class="wp-pin wp-${type}"></div>`;
-  }
-
-  // All other markers still use the inline SVGs
   const svg = ICON_SVGS[type] || ICON_SVGS.default;
   return `<div class="wp-pin wp-${type}">${svg}</div>`;
 }
+
 
 
 // Leaflet icon wrapper (divIcon)
