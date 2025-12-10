@@ -672,6 +672,7 @@ async function loadOhioCounties() {
     console.warn('Ohio counties layer fetch failed', e);
   }
 }
+loadOhioCounties();
 
 
 
