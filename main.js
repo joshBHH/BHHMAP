@@ -642,39 +642,37 @@ function buildCountyLabels() {
 }
 
 async function loadOhioCounties() {
-  // Use the same USA_Counties service we rely on for Indiana fallback,
-  // but filter to STATE_NAME='Ohio' and normalize the property name
+  // Try ArcGIS USA_Counties filtered to Ohio, similar to Indiana fallback
   try {
     const url =
-      'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0/query?' +
-      'where=STATE_NAME%3D%27Ohio%27&outFields=NAME&outSR=4326&f=geojson';
+      'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0/query?where=STATE_NAME%3D%27Ohio%27&outFields=NAME&outSR=4326&f=geojson';
 
     const r = await fetch(url, { cache: 'reload' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
+
     const j = await r.json();
 
-    // Normalize property so onEachFeature sees "County_Name"
-    const mapped = {
+    // Normalize to match what your onEachFeature expects
+    const normalized = {
       type: 'FeatureCollection',
       features: (j.features || []).map(f => ({
         type: 'Feature',
         geometry: f.geometry,
         properties: {
           County_Name:
-            (f.properties && (f.properties.NAME || f.properties.NAME10)) ||
+            (f.properties && (f.properties.NAME || f.properties.County_Name)) ||
             'County'
         }
       }))
     };
 
-    ohioCounties.addData(mapped);
+    ohioCounties.addData(normalized);
     buildCountyLabels();
   } catch (e) {
     console.warn('Ohio counties layer fetch failed', e);
   }
 }
 
-loadOhioCounties();
 
 
 map.on('zoomend', refreshCountyLabels);
