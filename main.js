@@ -585,7 +585,7 @@ const ohioCounties = L.geoJSON(null, {
   onEachFeature: (feat, layer) => {
     const name =
       (feat.properties &&
-        (feat.properties.County_Name || feat.properties.COUNTY_NAME)) ||
+        (feat.properties.County_Name || feat.properties.COUNTY_NAME || feat.properties.NAME)) ||
       'County';
 
     layer.on('mouseover', () => layer.setStyle({ weight: 2 }));
@@ -598,8 +598,8 @@ const countyLabels = L.layerGroup();
 
 function labelFontForZoom(z) {
   if (z >= 11) return 14;
-  if (z >= 9) return 12;
-  if (z >= 7) return 10;
+  if (z >= 9)  return 12;
+  if (z >= 7)  return 10;
   return 0;
 }
 
@@ -632,7 +632,7 @@ function buildCountyLabels() {
         })
       });
       countyLabels.addLayer(lbl);
-    } catch (_) { }
+    } catch (_) {}
   });
 
   refreshCountyLabels();
@@ -642,17 +642,49 @@ function buildCountyLabels() {
 }
 
 async function loadOhioCounties() {
-  // Try ArcGIS USA_Counties filtered to Ohio, similar to Indiana fallback
+  // Primary: Plotly FIPS GeoJSON (same as Indiana) filtered to Ohio (FIPS 39)
+  const primary =
+    'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
+  try {
+    const r = await fetch(primary, { cache: 'reload' });
+    if (r.ok) {
+      const j = await r.json();
+      const onlyOH = {
+        type: 'FeatureCollection',
+        features: (j.features || [])
+          .filter(f => {
+            const fips = (f.id || '').toString();
+            return fips.slice(0, 2) === '39'; // 39 = Ohio
+          })
+          .map(f => ({
+            type: 'Feature',
+            geometry: f.geometry,
+            properties: {
+              County_Name:
+                (f.properties && (f.properties.NAME || f.properties.County_Name)) ||
+                'County'
+            }
+          }))
+      };
+
+      if (onlyOH.features.length) {
+        ohioCounties.addData(onlyOH);
+        buildCountyLabels();
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn('Primary OH counties source failed', e);
+  }
+
+  // Fallback: ArcGIS USA_Counties filtered to Ohio (in case Plotly fails)
   try {
     const url =
-      'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0/query?where=STATE_NAME%3D%27Ohio%27&outFields=NAME&outSR=4326&f=geojson';
-
+      'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0/query?where=STATE_NAME%3D%27Ohio%27&outFields=NAME,STATE_NAME&outSR=4326&f=geojson';
     const r = await fetch(url, { cache: 'reload' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
-
     const j = await r.json();
 
-    // Normalize to match what your onEachFeature expects
     const normalized = {
       type: 'FeatureCollection',
       features: (j.features || []).map(f => ({
@@ -669,14 +701,12 @@ async function loadOhioCounties() {
     ohioCounties.addData(normalized);
     buildCountyLabels();
   } catch (e) {
-    console.warn('Ohio counties layer fetch failed', e);
+    console.warn('Ohio counties layer fetch failed (fallback)', e);
   }
 }
 
-// 👉 ADD THIS LINE:
+// Load Ohio counties once
 loadOhioCounties();
-
-
 
 map.on('zoomend', refreshCountyLabels);
 map.on('overlayadd', (e) => {
@@ -691,6 +721,7 @@ map.on('overlayremove', (e) => {
   }
 });
 // [BHH: OVERLAYS – COUNTIES END]
+
 
 
 /*******************
