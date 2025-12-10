@@ -575,6 +575,108 @@ async function loadOhioPublic() {
 loadOhioPublic();
 // [BHH: OVERLAYS – OHIO PUBLIC END]
 
+/*******************
+ * OVERLAYS: Indiana Public Hunting (points + lands)
+ *******************/
+const indianaPublic = L.layerGroup();
+
+// Shared popup builder for both points & polygons
+function bindIndianaHuntingPopup(feat, layer) {
+  const p = (feat && feat.properties) ? feat.properties : {};
+
+  const preferred = [
+    'NAME', 'AREA_NAME', 'UNIT_NAME', 'TRACT_NAME', 'PROPERTY',
+    'PROP_NAME', 'SITE_NAME', 'HUNT_NAME',
+    'COUNTY', 'ACRES', 'AREA_ACRES', 'TYPE'
+  ];
+
+  const headerKey =
+    preferred.find(k => k in p) ||
+    Object.keys(p)[0];
+
+  const name = headerKey ? String(p[headerKey]) : 'Hunting Area';
+
+  const keysOrdered = [
+    ...new Set([
+      ...preferred.filter(k => k in p),
+      ...Object.keys(p)
+    ])
+  ].slice(0, 12);
+
+  const rows = keysOrdered.map(k =>
+    `<div><span style="color:#a3b7a6">${k}:</span> ${String(p[k])}</div>`
+  ).join('');
+
+  layer.bindPopup(
+    `<b>${name}</b>${
+      rows ? `<div style="margin-top:6px">${rows}</div>` : ''
+    }`
+  );
+
+  // Only polygons/lines have setStyle – guard for points
+  if (layer.setStyle) {
+    layer.on('mouseover', () => layer.setStyle({ weight: 3 }));
+    layer.on('mouseout',  () => layer.setStyle({ weight: 2 }));
+  }
+}
+
+// Points: "Indiana Hunting Area Points"
+const indianaPublicPoints = L.geoJSON(null, {
+  pointToLayer: (feat, latlng) =>
+    L.circleMarker(latlng, {
+      radius: 4,
+      color: '#22c55e',
+      fillColor: '#22c55e',
+      fillOpacity: 0.9,
+      weight: 1
+    }),
+  onEachFeature: (feat, layer) => bindIndianaHuntingPopup(feat, layer)
+});
+
+// Polygons: "Hunting Lands" layer (full areas)
+const indianaHuntingLands = L.geoJSON(null, {
+  style: { color: '#22c55e', weight: 2, fillOpacity: 0.15 },
+  onEachFeature: (feat, layer) => bindIndianaHuntingPopup(feat, layer)
+});
+
+// Put both into one group so your existing toggle uses a single layer
+indianaPublic.addLayer(indianaPublicPoints);
+indianaPublic.addLayer(indianaHuntingLands);
+
+async function loadIndianaPublic() {
+  // Points
+  try {
+    const ptsResp = await fetch(
+      'https://gisdata.in.gov/server/rest/services/Hosted/Hunting_Areas_RO/FeatureServer/1/query?where=1%3D1&outFields=*&outSR=4326&f=geojson',
+      { cache: 'reload' }
+    );
+    if (ptsResp.ok) {
+      const ptsJson = await ptsResp.json();
+      indianaPublicPoints.addData(ptsJson);
+    }
+  } catch (e) {
+    console.warn('Indiana public hunting points load failed', e);
+  }
+
+  // Hunting Lands polygons
+  try {
+    const polyResp = await fetch(
+      'https://gisdata.in.gov/server/rest/services/Hosted/Hunting_Areas_RO/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson',
+      { cache: 'reload' }
+    );
+    if (polyResp.ok) {
+      const polyJson = await polyResp.json();
+      indianaHuntingLands.addData(polyJson);
+    }
+  } catch (e) {
+    console.warn('Indiana hunting lands polygons load failed', e);
+  }
+}
+
+loadIndianaPublic();
+
+
+
 
 /*******************
  * OVERLAYS: Ohio Counties + Labels
@@ -924,21 +1026,39 @@ const ovlTrack = document.getElementById('ovlTrack');
 
 // These layers get toggled by the sheet
 function syncOverlayChecks() {
-  ovlOhio.checked = map.hasLayer(ohioPublic);
-  ovlCounties.checked =
-    (currentState === 'IN')
-      ? map.hasLayer(indianaCounties)
-      : map.hasLayer(ohioCounties);
+  if (!ovlOhio || !ovlCounties || !ovlWaterfowl || !ovlDraw || !ovlMarks || !ovlTrack) return;
+
+  if (currentState === 'IN') {
+    ovlOhio.checked     = map.hasLayer(indianaPublic);
+    ovlCounties.checked = map.hasLayer(indianaCounties);
+  } else {
+    ovlOhio.checked     = map.hasLayer(ohioPublic);
+    ovlCounties.checked = map.hasLayer(ohioCounties);
+  }
+
   ovlWaterfowl.checked = map.hasLayer(waterfowlZones);
-  ovlDraw.checked = map.hasLayer(drawnItems);
-  ovlMarks.checked = map.hasLayer(markersLayer);
-  ovlTrack.checked = map.hasLayer(trackLayer);
+  ovlDraw.checked      = map.hasLayer(drawnItems);
+  ovlMarks.checked     = map.hasLayer(markersLayer);
+  ovlTrack.checked     = map.hasLayer(trackLayer);
 }
 
-ovlOhio.onchange =
-  () => ovlOhio.checked
-    ? ohioPublic.addTo(map)
-    : map.removeLayer(ohioPublic);
+
+ovlOhio.onchange = () => {
+  if (currentState === 'IN') {
+    if (ovlOhio.checked) {
+      indianaPublic.addTo(map);
+    } else {
+      map.removeLayer(indianaPublic);
+    }
+  } else {
+    if (ovlOhio.checked) {
+      ohioPublic.addTo(map);
+    } else {
+      map.removeLayer(ohioPublic);
+    }
+  }
+};
+
 
 ovlCounties.onchange = () => {
   if (currentState === 'IN') {
@@ -2482,52 +2602,69 @@ function syncStateUI() {
 }
 
 function onStateChanged() {
-  const wantedCounties =
-    ovlCounties && (
-      ovlCounties.checked ||
-      map.hasLayer(ohioCounties) ||
-      map.hasLayer(indianaCounties)
-    );
+  const wantedPublic   = ovlOhio     && ovlOhio.checked;
+  const wantedCounties = ovlCounties && ovlCounties.checked;
 
   const cfg = STATE_CFG[currentState];
   if (cfg) map.setView(cfg.center, cfg.zoom);
 
-  const lblPublic = document.getElementById('lblPublic');
-  const lblCounties = document.getElementById('lblCounties');
+  const lblPublic    = document.getElementById('lblPublic');
+  const lblCounties  = document.getElementById('lblCounties');
   const lblWaterfowl = document.getElementById('lblWaterfowl');
 
-  if (lblCounties)
-    lblCounties.textContent =
-      (currentState === 'IN') ? 'Indiana Counties' : 'Ohio Counties';
-
-  if (lblPublic)
-    lblPublic.textContent =
-      (currentState === 'IN')
-        ? 'Indiana Public Hunting (coming soon)'
-        : 'Ohio Public Hunting';
-
-  if (lblWaterfowl)
-    lblWaterfowl.textContent =
-      (currentState === 'IN')
-        ? 'Waterfowl Zones (coming soon)'
-        : 'Waterfowl Zones';
-
   const isOH = currentState === 'OH';
-  ovlOhio.disabled = !isOH;
-  ovlWaterfowl.disabled = !isOH;
-  ovlCounties.disabled = false;
+  const isIN = currentState === 'IN';
 
-  if (map.hasLayer(ohioCounties)) map.removeLayer(ohioCounties);
-  if (map.hasLayer(countyLabels)) map.removeLayer(countyLabels);
-  if (map.hasLayer(indianaCounties)) map.removeLayer(indianaCounties);
+  if (lblCounties) {
+    lblCounties.textContent =
+      isIN ? 'Indiana Counties' :
+      isOH ? 'Ohio Counties' :
+      'State Counties (coming soon)';
+  }
+
+  if (lblPublic) {
+    lblPublic.textContent =
+      isIN ? 'Indiana Public Hunting' :
+      isOH ? 'Ohio Public Hunting' :
+      'Public Hunting (coming soon)';
+  }
+
+  if (lblWaterfowl) {
+    lblWaterfowl.textContent =
+      isOH
+        ? 'Waterfowl Zones'
+        : 'Waterfowl Zones (OH only for now)';
+  }
+
+  // Enable Public + Counties for OH/IN, disable elsewhere
+  if (ovlOhio)      ovlOhio.disabled     = !(isOH || isIN);
+  if (ovlCounties)  ovlCounties.disabled = !(isOH || isIN);
+  if (ovlWaterfowl) ovlWaterfowl.disabled = !isOH;
+
+  // Remove all state-specific overlays
+  if (map.hasLayer(ohioPublic))    map.removeLayer(ohioPublic);
+  if (map.hasLayer(indianaPublic)) map.removeLayer(indianaPublic);
+
+  if (map.hasLayer(ohioCounties))        map.removeLayer(ohioCounties);
+  if (map.hasLayer(countyLabels))        map.removeLayer(countyLabels);
+  if (map.hasLayer(indianaCounties))     map.removeLayer(indianaCounties);
   if (map.hasLayer(indianaCountyLabels)) map.removeLayer(indianaCountyLabels);
 
-  if (wantedCounties) {
-    if (currentState === 'IN') {
+  // Re-add for the new state based on current checkboxes
+  if (wantedPublic && ovlOhio && !ovlOhio.disabled) {
+    if (isIN) {
+      indianaPublic.addTo(map);
+    } else if (isOH) {
+      ohioPublic.addTo(map);
+    }
+  }
+
+  if (wantedCounties && ovlCounties && !ovlCounties.disabled) {
+    if (isIN) {
       indianaCounties.addTo(map);
       indianaCountyLabels.addTo(map);
       refreshIndianaCountyLabels();
-    } else {
+    } else if (isOH) {
       ohioCounties.addTo(map);
       countyLabels.addTo(map);
       refreshCountyLabels();
@@ -2536,6 +2673,7 @@ function onStateChanged() {
 
   syncOverlayChecks();
 }
+
 
 function setState(code, save = true) {
   const c = (code || 'OH').toUpperCase();
