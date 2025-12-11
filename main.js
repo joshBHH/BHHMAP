@@ -956,46 +956,236 @@ map.on('overlayremove', (e) => {
 
 
 /*******************
- * OVERLAYS: Waterfowl Zones (ODNR polygons)
+ * OVERLAYS: Waterfowl Zones (OH + IN)
  *******************/
 // [BHH: OVERLAYS – WATERFOWL ZONES START]
-const waterfowlZones = L.geoJSON(null, {
-  style: { color: '#22c55e', weight: 2, fillOpacity: 0.15 },
-  onEachFeature: (feat, layer) => {
-    const p = feat.properties || {};
-    const name = p.Zone_ || p.ZONE_NAME || 'Waterfowl Zone';
-    const duck = p.DuckSeason || p.DUCK_SEASON || '';
-    const goose = p.GooseSeason || p.GOOSE_SEASON || '';
 
-    const rows = [
-      duck ? `<div><span style="color:#a3b7a6">Duck:</span> ${duck}</div>` : '',
-      goose ? `<div><span style="color:#a3b7a6">Goose:</span> ${goose}</div>` : ''
-    ].join('');
+// One overlay toggle in the UI controls this group.
+// Contents depend on currentState (OH or IN).
+const waterfowlZones = L.layerGroup();
 
-    layer.bindPopup(
-      `<b>${name}</b>${
-      rows ? `<div style="margin-top:6px">${rows}</div>` : ''
-      }`
-    );
+// Shared helper to infer a zone name from feature properties
+function inferZoneName(props) {
+  if (!props) return '';
 
-    layer.on('mouseover', () => layer.setStyle({ weight: 3 }));
-    layer.on('mouseout', () => layer.setStyle({ weight: 2 }));
+  const candidateKeys = [
+    'Zone_', 'ZONE_', 'ZONE_NAME', 'ZoneName',
+    'ZONE', 'ZONE_LABEL', 'LABEL', 'NAME'
+  ];
+
+  for (const k of candidateKeys) {
+    if (props[k] != null && props[k] !== '') {
+      return String(props[k]);
+    }
   }
+
+  // Fallback: any string value that mentions "zone"
+  for (const v of Object.values(props)) {
+    if (typeof v === 'string' && /zone/i.test(v)) {
+      return v;
+    }
+  }
+
+  return '';
+}
+
+/* ---------- OHIO WATERFOWL ZONES ---------- */
+
+function ohioZoneStyle(feat) {
+  const name = inferZoneName(feat.properties).toUpperCase();
+  let color = '#22c55e'; // default green
+
+  if (name.includes('NORTH')) {
+    color = '#22c55e';          // North Zone
+  } else if (name.includes('SOUTH')) {
+    color = '#f97316';          // South Zone
+  } else if (
+    name.includes('LAKE') ||
+    name.includes('MARSH') ||
+    name.includes('ERIE')
+  ) {
+    color = '#38bdf8';          // Lake Erie Marsh Zone
+  }
+
+  return {
+    color,
+    weight: 2,
+    fillOpacity: 0.18
+  };
+}
+
+function onEachOhioWaterfowl(feat, layer) {
+  const raw = inferZoneName(feat.properties);
+  const name = raw || 'Ohio Waterfowl Zone';
+
+  // Ohio: ONLY show the zone label (no dates/seasons)
+  layer.bindPopup(`<b>${name}</b>`);
+
+  layer.on('mouseover', () => layer.setStyle({ weight: 3 }));
+  layer.on('mouseout',  () => layer.setStyle({ weight: 2 }));
+}
+
+const ohioWaterfowlZones = L.geoJSON(null, {
+  style: ohioZoneStyle,
+  onEachFeature: onEachOhioWaterfowl
 });
 
-async function loadWaterfowlZones() {
+async function loadOhioWaterfowlZones() {
   try {
     const url =
-      'https://gis2.ohiodnr.gov/ArcGIS/rest/services/DOW_Services/Hunting_Regulations/MapServer/2/query?where=1%3D1&outFields=*&outSR=4326&f=geojson';
-    const r = await fetch(url);
+      'https://gis2.ohiodnr.gov/ArcGIS/rest/services/DOW_Services/Hunting_Regulations/MapServer/2/query' +
+      '?where=1%3D1&outFields=*&outSR=4326&f=geojson';
+    const r = await fetch(url, { cache: 'reload' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
-    waterfowlZones.addData(j);
+    ohioWaterfowlZones.addData(j);
   } catch (e) {
-    console.warn('Waterfowl zones load failed', e);
+    console.warn('Ohio waterfowl zones load failed', e);
   }
+}
+
+/* ---------- INDIANA WATERFOWL ZONES ---------- */
+
+function indianaZoneStyle(feat) {
+  const name = inferZoneName(feat.properties).toUpperCase();
+  let color = '#22c55e'; // default
+
+  if (name.includes('NORTH')) {
+    color = '#22c55e';          // North
+  } else if (name.includes('CENTRAL')) {
+    color = '#eab308';          // Central
+  } else if (name.includes('SOUTH')) {
+    color = '#f97316';          // South
+  }
+
+  return {
+    color,
+    weight: 2,
+    fillOpacity: 0.18
+  };
+}
+
+function onEachIndianaWaterfowl(feat, layer) {
+  const raw = inferZoneName(feat.properties);
+  let name = raw || 'Indiana Waterfowl Zone';
+
+  // If the value is just "North", "Central", or "South", make it a full label
+  const upper = name.toUpperCase();
+  if (/NORTH\b/i.test(name) && !/WATERFOWL/i.test(name)) {
+    name = 'North Waterfowl Zone';
+  } else if (/CENTRAL\b/i.test(name) && !/WATERFOWL/i.test(name)) {
+    name = 'Central Waterfowl Zone';
+  } else if (/SOUTH\b/i.test(name) && !/WATERFOWL/i.test(name)) {
+    name = 'South Waterfowl Zone';
+  }
+
+  layer.bindPopup(`<b>${name}</b>`);
+
+  layer.on('mouseover', () => layer.setStyle({ weight: 3 }));
+  layer.on('mouseout',  () => layer.setStyle({ weight: 2 }));
+}
+
+// --- Indiana-specific popup + styling ---
+function decorateIndianaWaterfowlFeature(feat, layer) {
+  const p = feat.properties || {};
+
+  // Field is "zone" in the Indiana service: North / Central / South
+  const rawZone = (p.zone || p.ZONE || '').toString().trim();
+  const zoneName = rawZone
+    ? `${rawZone} Waterfowl Zone`          // e.g. "North Waterfowl Zone"
+    : 'Indiana Waterfowl Zone';
+
+  // Optional description field if they ever use it
+  const desc = (p.description || p.DESCRIPTION || '').toString().trim();
+  const body = desc
+    ? `<div style="margin-top:6px">${desc}</div>`
+    : '';
+
+  layer.bindPopup(`<b>${zoneName}</b>${body}`);
+
+  layer.on('mouseover', () => layer.setStyle({ weight: 3 }));
+  layer.on('mouseout', () => layer.setStyle({ weight: 2 }));
+}
+
+// Indiana waterfowl polygons (from IN DNR service)
+const indianaWaterfowlZones = L.geoJSON(null, {
+  style: (feat) => {
+    const p = feat.properties || {};
+    const z = (p.zone || p.ZONE || '').toString().toLowerCase();
+
+    // Different colors for each zone
+    let color = '#22c55e';       // default / North
+    if (z === 'central') color = '#3b82f6';   // blue
+    else if (z === 'south') color = '#f97316'; // orange
+
+    return {
+      color,
+      weight: 2,
+      fillColor: color,
+      fillOpacity: 0.25
+    };
+  },
+  onEachFeature: decorateIndianaWaterfowlFeature
+});
+
+
+// Indiana DNR hosted waterfowl zones service (polygon layer)
+const IN_WATERFOWL_SERVICE =
+  'https://gisdata.in.gov/server/rest/services/Hosted/Hunting_Areas_Waterfowl_Zones/FeatureServer/0';
+
+async function loadIndianaWaterfowlZones() {
+  if (!IN_WATERFOWL_SERVICE) {
+    console.warn('Indiana waterfowl service URL not configured yet.');
+    return;
+  }
+
+  try {
+    const url =
+      IN_WATERFOWL_SERVICE +
+      '/query?where=1%3D1&outFields=*&outSR=4326&f=geojson';
+
+    const r = await fetch(url, { cache: 'reload' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    indianaWaterfowlZones.addData(j);
+  } catch (e) {
+    console.warn('Indiana waterfowl zones load failed', e);
+  }
+}
+
+/* ---------- STATE-AWARE VISIBILITY ---------- */
+
+function updateWaterfowlVisibility() {
+  if (!ovlWaterfowl) return;
+
+  // Always clear everything first so only one state is active at a time
+  waterfowlZones.clearLayers();
+
+  if (!ovlWaterfowl.checked) {
+    if (map.hasLayer(waterfowlZones)) map.removeLayer(waterfowlZones);
+    return;
+  }
+
+  if (currentState === 'OH') {
+    waterfowlZones.addLayer(ohioWaterfowlZones);
+  } else if (currentState === 'IN') {
+    waterfowlZones.addLayer(indianaWaterfowlZones);
+  }
+
+  if (!map.hasLayer(waterfowlZones)) {
+    waterfowlZones.addTo(map);
+  }
+}
+
+// Kick off both data loads (they just populate the layers)
+function loadWaterfowlZones() {
+  loadOhioWaterfowlZones();
+  loadIndianaWaterfowlZones();
 }
 loadWaterfowlZones();
 // [BHH: OVERLAYS – WATERFOWL ZONES END]
+
+
 
 
 /*******************
@@ -1082,10 +1272,10 @@ ovlCounties.onchange = () => {
   }
 };
 
-ovlWaterfowl.onchange =
-  () => ovlWaterfowl.checked
-    ? waterfowlZones.addTo(map)
-    : map.removeLayer(waterfowlZones);
+ovlWaterfowl.onchange = () => {
+  updateWaterfowlVisibility();
+};
+
 
 ovlDraw.onchange =
   () => {
@@ -2577,17 +2767,17 @@ rebuildCompassTargets();
 // [BHH: STATE – LOGIC START]
 const STORAGE_STATE = 'bhh_state_code';
 
-const stateBadgeText = document.getElementById('stateBadgeText');
-const stateSelect = document.getElementById('stateSelect');
-const stateApplyBtn = document.getElementById('stateApply');
-const menuStateBtn = document.getElementById('menuState');
+const stateBadgeText  = document.getElementById('stateBadgeText');
+const stateSelect     = document.getElementById('stateSelect');
+const stateApplyBtn   = document.getElementById('stateApply');
+const menuStateBtn    = document.getElementById('menuState');
 const stateSheetRadios = Array.from(
   document.querySelectorAll('input[name="bhhState"]')
 );
 
 const STATE_CFG = {
-  OH: { name: 'Ohio', center: [40.4173, -82.9071], zoom: 7 },
-  IN: { name: 'Indiana', center: [39.905, -86.2816], zoom: 7 }
+  OH: { name: 'Ohio',    center: [40.4173, -82.9071], zoom: 7 },
+  IN: { name: 'Indiana', center: [39.905,  -86.2816], zoom: 7 }
 };
 
 let currentState =
@@ -2595,7 +2785,7 @@ let currentState =
 
 function syncStateUI() {
   if (stateBadgeText) stateBadgeText.textContent = currentState;
-  if (stateSelect) stateSelect.value = currentState;
+  if (stateSelect)    stateSelect.value          = currentState;
   stateSheetRadios.forEach(r => {
     r.checked = (r.value.toUpperCase() === currentState);
   });
@@ -2615,6 +2805,7 @@ function onStateChanged() {
   const isOH = currentState === 'OH';
   const isIN = currentState === 'IN';
 
+  // Update labels
   if (lblCounties) {
     lblCounties.textContent =
       isIN ? 'Indiana Counties' :
@@ -2631,19 +2822,19 @@ function onStateChanged() {
 
   if (lblWaterfowl) {
     lblWaterfowl.textContent =
-      isOH
-        ? 'Waterfowl Zones'
-        : 'Waterfowl Zones (OH only for now)';
+      isIN ? 'Indiana Waterfowl Zones' :
+      isOH ? 'Ohio Waterfowl Zones' :
+      'Waterfowl Zones (coming soon)';
   }
 
-  // Enable Public + Counties for OH/IN, disable elsewhere
-  if (ovlOhio)      ovlOhio.disabled     = !(isOH || isIN);
-  if (ovlCounties)  ovlCounties.disabled = !(isOH || isIN);
-  if (ovlWaterfowl) ovlWaterfowl.disabled = !isOH;
+  // Enable Public / Counties / Waterfowl for OH & IN
+  if (ovlOhio)      ovlOhio.disabled      = !(isOH || isIN);
+  if (ovlCounties)  ovlCounties.disabled  = !(isOH || isIN);
+  if (ovlWaterfowl) ovlWaterfowl.disabled = !(isOH || isIN);
 
   // Remove all state-specific overlays
-  if (map.hasLayer(ohioPublic))    map.removeLayer(ohioPublic);
-  if (map.hasLayer(indianaPublic)) map.removeLayer(indianaPublic);
+  if (map.hasLayer(ohioPublic))          map.removeLayer(ohioPublic);
+  if (map.hasLayer(indianaPublic))       map.removeLayer(indianaPublic);
 
   if (map.hasLayer(ohioCounties))        map.removeLayer(ohioCounties);
   if (map.hasLayer(countyLabels))        map.removeLayer(countyLabels);
@@ -2671,8 +2862,15 @@ function onStateChanged() {
     }
   }
 
+    // Waterfowl zones: ensure only the active state's layer is visible
+  updateWaterfowlVisibility();
+
+  // Make sure our overlay checkboxes match what's actually on the map
   syncOverlayChecks();
 }
+
+  // Make sure our overlay checkboxes match what's actually on the map
+  syncOverlayChecks();
 
 
 function setState(code, save = true) {
@@ -2706,6 +2904,7 @@ if (stateApplyBtn) {
   };
 }
 // [BHH: STATE – LOGIC END]
+
 
 
 /*******************
