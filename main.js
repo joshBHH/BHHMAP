@@ -675,29 +675,302 @@ async function loadIndianaPublic() {
 
 loadIndianaPublic();
 
+/*******************
+ * OVERLAYS: Public Hunting (other states via remote services / local GeoJSON)
+ *******************/
+// These layers all use the same popup builder we used for Indiana:
+//   bindIndianaHuntingPopup(feat, layer)
+
+/*******************
+ * OVERLAYS: Michigan Public Hunting
+ *******************/
+const michiganPublic = L.geoJSON(null, {
+  style: {
+    color: '#22c55e',
+    weight: 2,
+    fillOpacity: 0.15
+  },
+  onEachFeature: (feat, layer) => {
+    const p = (feat && feat.properties) ? feat.properties : {};
+
+    // Try to guess a good display name
+    const preferred = [
+      'NAME', 'AREA_NAME', 'UNIT_NAME', 'TRACT_NAME', 'PROPERTY',
+      'PROP_NAME', 'SITE_NAME', 'HUNT_NAME', 'AREANAME',
+      'COUNTY', 'ACRES', 'TYPE'
+    ];
+
+    const headerKey =
+      preferred.find(k => k in p) ||
+      Object.keys(p)[0];
+
+    const name = headerKey ? String(p[headerKey]) : 'Public Hunting Area';
+
+    const keysOrdered = [
+      ...new Set([
+        ...preferred.filter(k => k in p),
+        ...Object.keys(p)
+      ])
+    ].slice(0, 12);
+
+    const rows = keysOrdered.map(k =>
+      `<div><span style="color:#a3b7a6">${k}:</span> ${String(p[k])}</div>`
+    ).join('');
+
+    layer.bindPopup(
+      `<b>${name}</b>${
+        rows ? `<div style="margin-top:6px">${rows}</div>` : ''
+      }`
+    );
+
+    if (layer.setStyle) {
+      layer.on('mouseover', () => layer.setStyle({ weight: 3 }));
+      layer.on('mouseout',  () => layer.setStyle({ weight: 2 }));
+    }
+  }
+});
+
+async function loadMichiganPublic() {
+  // MIHUNT group-layer 30 has several polygon sublayers (31–34)
+  const subLayerIds = [31, 32, 33, 34];
+
+  // Optional: clear in case this gets called more than once
+  michiganPublic.clearLayers();
+
+  for (const id of subLayerIds) {
+    try {
+      const url =
+        `https://gisp.mcgi.state.mi.us/arcgis/rest/services/DNR/MIHUNT/MapServer/${id}/query` +
+        '?where=1%3D1&outFields=*&outSR=4326&f=geojson';
+
+      const resp = await fetch(url, { cache: 'reload' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      const json = await resp.json();
+      michiganPublic.addData(json);
+    } catch (e) {
+      console.warn('Michigan public hunting sublayer', id, 'load failed', e);
+    }
+  }
+}
+
+loadMichiganPublic();
 
 
 
 /*******************
- * OVERLAYS: Ohio Counties + Labels
+ * OVERLAYS: Kentucky Public Hunting (remote ArcGIS service)
  *******************/
-// [BHH: OVERLAYS – COUNTIES START]
-const ohioCounties = L.geoJSON(null, {
-  style: { color: '#94a3b8', weight: 1, fill: false, opacity: 0.9 },
-  onEachFeature: (feat, layer) => {
-    const name =
-      (feat.properties &&
-        (feat.properties.County_Name || feat.properties.COUNTY_NAME || feat.properties.NAME)) ||
-      'County';
-
-    layer.on('mouseover', () => layer.setStyle({ weight: 2 }));
-    layer.on('mouseout', () => layer.setStyle({ weight: 1 }));
-    layer._countyName = String(name);
-  }
+const kentuckyPublic = L.geoJSON(null, {
+  style: { color: '#22c55e', weight: 2, fillOpacity: 0.15 },
+  onEachFeature: (feat, layer) => bindIndianaHuntingPopup(feat, layer)
 });
 
-const countyLabels = L.layerGroup();
+async function loadKentuckyPublic() {
+  try {
+    // Ky_Public_Hunting_Areas_WGS84WM – layer 1 = HuntingAreas 
+    const url =
+      'https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_Public_Hunting_Areas_WGS84WM/MapServer/1/query' +
+      '?where=1%3D1&outFields=*&outSR=4326&f=geojson';
 
+    const r = await fetch(url, { cache: 'reload' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    kentuckyPublic.addData(j);
+  } catch (e) {
+    console.warn('Kentucky public hunting load failed', e);
+  }
+}
+
+
+/*******************
+ * OVERLAYS: West Virginia Public Hunting (Wildlife Management Areas)
+ *******************/
+const wvPublic = L.geoJSON(null, {
+  style: { color: '#22c55e', weight: 2, fillOpacity: 0.15 },
+  onEachFeature: (feat, layer) => bindIndianaHuntingPopup(feat, layer)
+});
+
+async function loadWvPublic() {
+  try {
+    // WV Boundaries FeatureServer/6 – Wildlife_Management_Areas 
+    const url =
+      'https://gis.transportation.wv.gov/arcgis/rest/services/Boundaries/FeatureServer/6/query' +
+      '?where=1%3D1&outFields=*&outSR=4326&f=geojson';
+
+    const r = await fetch(url, { cache: 'reload' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    wvPublic.addData(j);
+  } catch (e) {
+    console.warn('West Virginia public hunting load failed', e);
+  }
+}
+
+
+/*******************
+ * OVERLAYS: Pennsylvania Public Hunting (State Game Lands)
+ *******************/
+const paPublic = L.geoJSON(null, {
+  style: { color: '#22c55e', weight: 2, fillOpacity: 0.15 },
+  onEachFeature: (feat, layer) => bindIndianaHuntingPopup(feat, layer)
+});
+
+async function loadPaPublic() {
+  try {
+    const url =
+      'https://mapservices.pasda.psu.edu/server/rest/services/pasda/PennsylvaniaGameCommission/MapServer/4/query' +
+      '?where=1%3D1&outFields=*&outSR=4326&f=geojson';
+
+    const resp = await fetch(url, { cache: 'reload' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const json = await resp.json();
+    paPublic.clearLayers();
+    paPublic.addData(json);
+  } catch (e) {
+    console.warn('Pennsylvania public hunting load failed', e);
+  }
+}
+
+
+
+/*******************
+ * OVERLAYS: Illinois Public Hunting
+ * (still using local GeoJSON until we have a good ArcGIS URL)
+ *******************/
+const ilPublic = L.geoJSON(null, {
+  style: { color: '#22c55e', weight: 2, fillOpacity: 0.15 },
+  onEachFeature: (feat, layer) => bindIndianaHuntingPopup(feat, layer)
+});
+
+async function loadIlPublic() {
+  try {
+    const r = await fetch('il_public_hunting.geojson', { cache: 'reload' });
+    if (r.ok) {
+      const j = await r.json();
+      ilPublic.addData(j);
+    }
+  } catch (e) {
+    console.warn('Illinois public hunting load failed', e);
+  }
+}
+
+
+/*******************
+ * OVERLAYS: Wisconsin Public Hunting
+ * (still using local GeoJSON until we have a good ArcGIS URL)
+ *******************/
+const wiPublic = L.geoJSON(null, {
+  style: { color: '#22c55e', weight: 2, fillOpacity: 0.15 },
+  onEachFeature: (feat, layer) => bindIndianaHuntingPopup(feat, layer)
+});
+
+async function loadWiPublic() {
+  try {
+    const r = await fetch('wi_public_hunting.geojson', { cache: 'reload' });
+    if (r.ok) {
+      const j = await r.json();
+      wiPublic.addData(j);
+    }
+  } catch (e) {
+    console.warn('Wisconsin public hunting load failed', e);
+  }
+}
+
+
+// Kick off loads
+loadMichiganPublic();
+loadKentuckyPublic();
+loadWvPublic();
+loadPaPublic();
+loadIlPublic();
+loadWiPublic();
+
+// Registry so UI can treat “Public Hunting” generically per state
+const PUBLIC_BY_STATE = {
+  OH: ohioPublic,
+  IN: indianaPublic,
+  MI: michiganPublic,
+  KY: kentuckyPublic,
+  WV: wvPublic,
+  PA: paPublic,
+  IL: ilPublic,
+  WI: wiPublic
+};
+
+
+
+
+
+/*******************
+ * OVERLAYS: Counties + Labels (multi-state)
+ *******************/
+// [BHH: OVERLAYS – COUNTIES START]
+
+// FIPS codes for each supported state
+const COUNTY_FIPS = {
+  OH: '39',
+  IN: '18',
+  MI: '26',
+  KY: '21',
+  WV: '54',
+  PA: '42',
+  IL: '17',
+  WI: '55'
+};
+
+const COUNTY_STATE_NAMES = {
+  OH: 'Ohio',
+  IN: 'Indiana',
+  MI: 'Michigan',
+  KY: 'Kentucky',
+  WV: 'West Virginia',
+  PA: 'Pennsylvania',
+  IL: 'Illinois',
+  WI: 'Wisconsin'
+};
+
+// Registry: state -> { counties: L.GeoJSON, labels: L.LayerGroup }
+const COUNTY_REG = {};
+
+function makeCountyLayersForState(stateCode) {
+  const counties = L.geoJSON(null, {
+    style: { color: '#94a3b8', weight: 1, fill: false, opacity: 0.9 },
+    onEachFeature: (feat, layer) => {
+      const p = feat.properties || {};
+      const name =
+        p.County_Name ||
+        p.COUNTY_NAME ||
+        p.NAME ||
+        p.County ||
+        p.COUNTY ||
+        'County';
+
+      layer.on('mouseover', () => layer.setStyle({ weight: 2 }));
+      layer.on('mouseout',  () => layer.setStyle({ weight: 1 }));
+      layer._countyName = String(name);
+    }
+  });
+
+  const labels = L.layerGroup();
+
+  COUNTY_REG[stateCode] = { counties, labels };
+  return { counties, labels };
+}
+
+// Concrete layers (for compatibility with rest of code)
+const { counties: ohioCounties,      labels: countyLabels }          = makeCountyLayersForState('OH');
+const { counties: indianaCounties,   labels: indianaCountyLabels }   = makeCountyLayersForState('IN');
+const { counties: michiganCounties,  labels: michiganCountyLabels }  = makeCountyLayersForState('MI');
+const { counties: kentuckyCounties,  labels: kentuckyCountyLabels }  = makeCountyLayersForState('KY');
+const { counties: wvCounties,        labels: wvCountyLabels }        = makeCountyLayersForState('WV');
+const { counties: paCounties,        labels: paCountyLabels }        = makeCountyLayersForState('PA');
+const { counties: illinoisCounties,  labels: illinoisCountyLabels }  = makeCountyLayersForState('IL');
+const { counties: wisconsinCounties, labels: wisconsinCountyLabels } = makeCountyLayersForState('WI');
+
+
+// Label font size based on zoom
 function labelFontForZoom(z) {
   if (z >= 11) return 14;
   if (z >= 9)  return 12;
@@ -705,23 +978,29 @@ function labelFontForZoom(z) {
   return 0;
 }
 
-function refreshCountyLabels() {
+function refreshAllCountyLabels() {
   const fs = labelFontForZoom(map.getZoom());
-  countyLabels.eachLayer(m => {
-    const el = m.getElement();
-    if (!el) return;
-    if (fs === 0) {
-      el.style.display = 'none';
-    } else {
-      el.style.display = 'block';
-      el.style.fontSize = fs + 'px';
-    }
+  Object.values(COUNTY_REG).forEach(entry => {
+    entry.labels.eachLayer(m => {
+      const el = m.getElement();
+      if (!el) return;
+      if (fs === 0) {
+        el.style.display = 'none';
+      } else {
+        el.style.display = 'block';
+        el.style.fontSize = fs + 'px';
+      }
+    });
   });
 }
 
-function buildCountyLabels() {
-  countyLabels.clearLayers();
-  ohioCounties.eachLayer(layer => {
+function buildCountyLabelsFor(stateCode) {
+  const entry = COUNTY_REG[stateCode];
+  if (!entry) return;
+  const { counties, labels } = entry;
+
+  labels.clearLayers();
+  counties.eachLayer(layer => {
     try {
       const center = layer.getBounds().getCenter();
       const name = layer._countyName || 'County';
@@ -733,31 +1012,32 @@ function buildCountyLabels() {
           html: name
         })
       });
-      countyLabels.addLayer(lbl);
+      labels.addLayer(lbl);
     } catch (_) {}
   });
 
-  refreshCountyLabels();
-  if (map.hasLayer(ohioCounties) && !map.hasLayer(countyLabels)) {
-    countyLabels.addTo(map);
+  refreshAllCountyLabels();
+  if (map.hasLayer(counties) && !map.hasLayer(labels)) {
+    labels.addTo(map);
   }
 }
 
-async function loadOhioCounties() {
-  // Primary: Plotly FIPS GeoJSON (same as Indiana) filtered to Ohio (FIPS 39)
+async function loadStateCounties(stateCode) {
+  const fips = COUNTY_FIPS[stateCode];
+  const stateName = COUNTY_STATE_NAMES[stateCode];
+  const entry = COUNTY_REG[stateCode];
+  if (!fips || !stateName || !entry) return;
+
   const primary =
     'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
   try {
     const r = await fetch(primary, { cache: 'reload' });
     if (r.ok) {
       const j = await r.json();
-      const onlyOH = {
+      const fc = {
         type: 'FeatureCollection',
         features: (j.features || [])
-          .filter(f => {
-            const fips = (f.id || '').toString();
-            return fips.slice(0, 2) === '39'; // 39 = Ohio
-          })
+          .filter(f => (f.id || '').toString().slice(0, 2) === fips)
           .map(f => ({
             type: 'Feature',
             geometry: f.geometry,
@@ -769,20 +1049,23 @@ async function loadOhioCounties() {
           }))
       };
 
-      if (onlyOH.features.length) {
-        ohioCounties.addData(onlyOH);
-        buildCountyLabels();
+      if (fc.features.length) {
+        entry.counties.addData(fc);
+        buildCountyLabelsFor(stateCode);
         return;
       }
     }
   } catch (e) {
-    console.warn('Primary OH counties source failed', e);
+    console.warn('Primary counties source failed for', stateCode, e);
   }
 
-  // Fallback: ArcGIS USA_Counties filtered to Ohio (in case Plotly fails)
+  // Fallback – ArcGIS USA_Counties
   try {
     const url =
-      'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0/query?where=STATE_NAME%3D%27Ohio%27&outFields=NAME,STATE_NAME&outSR=4326&f=geojson';
+      'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0/query' +
+      '?where=STATE_NAME%3D' + encodeURIComponent(`'${stateName}'`) +
+      '&outFields=NAME,STATE_NAME&outSR=4326&f=geojson';
+
     const r = await fetch(url, { cache: 'reload' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
@@ -800,159 +1083,21 @@ async function loadOhioCounties() {
       }))
     };
 
-    ohioCounties.addData(normalized);
-    buildCountyLabels();
+    entry.counties.addData(normalized);
+    buildCountyLabelsFor(stateCode);
   } catch (e) {
-    console.warn('Ohio counties layer fetch failed (fallback)', e);
+    console.warn('Counties layer fetch failed for', stateCode, e);
   }
 }
 
-// Load Ohio counties once
-loadOhioCounties();
+// Load all states' counties once
+['OH','IN','MI','KY','WV','PA','IL','WI'].forEach(loadStateCounties);
 
-map.on('zoomend', refreshCountyLabels);
-map.on('overlayadd', (e) => {
-  if (e.layer === ohioCounties) {
-    countyLabels.addTo(map);
-    refreshCountyLabels();
-  }
-});
-map.on('overlayremove', (e) => {
-  if (e.layer === ohioCounties) {
-    map.removeLayer(countyLabels);
-  }
-});
+map.on('zoomend', refreshAllCountyLabels);
+
 // [BHH: OVERLAYS – COUNTIES END]
 
 
-
-/*******************
- * OVERLAYS: Indiana Counties + Labels
- *******************/
-// [BHH: OVERLAYS – IN COUNTIES START]
-const indianaCounties = L.geoJSON(null, {
-  style: { color: '#94a3b8', weight: 1, fill: false, opacity: 0.9 },
-  onEachFeature: (feat, layer) => {
-    const name =
-      (feat.properties &&
-        (feat.properties.NAME ||
-          feat.properties.County ||
-          feat.properties.COUNTY)) ||
-      'County';
-
-    layer.on('mouseover', () => layer.setStyle({ weight: 2 }));
-    layer.on('mouseout', () => layer.setStyle({ weight: 1 }));
-    layer._countyName = String(name);
-  }
-});
-
-const indianaCountyLabels = L.layerGroup();
-
-function labelFontForZoomIN(z) {
-  if (z >= 11) return 14;
-  if (z >= 9) return 12;
-  if (z >= 7) return 10;
-  return 0;
-}
-
-function refreshIndianaCountyLabels() {
-  const fs = labelFontForZoomIN(map.getZoom());
-  indianaCountyLabels.eachLayer(m => {
-    const el = m.getElement();
-    if (!el) return;
-    if (fs === 0) {
-      el.style.display = 'none';
-    } else {
-      el.style.display = 'block';
-      el.style.fontSize = fs + 'px';
-    }
-  });
-}
-
-function buildIndianaCountyLabels() {
-  indianaCountyLabels.clearLayers();
-  indianaCounties.eachLayer(layer => {
-    try {
-      const center = layer.getBounds().getCenter();
-      const name = layer._countyName || 'County';
-      const lbl = L.marker(center, {
-        interactive: false,
-        pane: 'tooltipPane',
-        icon: L.divIcon({
-          className: 'county-label',
-          html: name
-        })
-      });
-      indianaCountyLabels.addLayer(lbl);
-    } catch (_) { }
-  });
-
-  refreshIndianaCountyLabels();
-  if (map.hasLayer(indianaCounties) && !map.hasLayer(indianaCountyLabels)) {
-    indianaCountyLabels.addTo(map);
-  }
-}
-
-async function loadIndianaCounties() {
-  // Try US Census TIGER/Cartographic counties for Indiana (GeoJSON)
-  const primary =
-    'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
-  try {
-    const r = await fetch(primary, { cache: 'reload' });
-    if (r.ok) {
-      const j = await r.json();
-      const onlyIN = {
-        type: 'FeatureCollection',
-        features: (j.features || []).filter(f => {
-          const fips = (f.id || '').toString();
-          return fips.slice(0, 2) === '18';
-        }).map(f => ({
-          type: 'Feature',
-          geometry: f.geometry,
-          properties: {
-            NAME: (f.properties && f.properties.NAME) || 'County'
-          }
-        }))
-      };
-
-      if (onlyIN.features.length) {
-        indianaCounties.addData(onlyIN);
-        buildIndianaCountyLabels();
-        return;
-      }
-    }
-  } catch (e) {
-    console.warn('Primary IN counties source failed', e);
-  }
-
-  // Fallback: ArcGIS USA_Counties filtered to Indiana
-  try {
-    const url =
-      'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0/query?where=STATE_NAME%3D%27Indiana%27&outFields=NAME&outSR=4326&f=geojson';
-    const r = await fetch(url);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const j = await r.json();
-    indianaCounties.addData(j);
-    buildIndianaCountyLabels();
-  } catch (e) {
-    console.error('Indiana counties layer fetch failed', e);
-  }
-}
-loadIndianaCounties();
-
-map.on('zoomend', refreshIndianaCountyLabels);
-map.on('overlayadd', (e) => {
-  if (e.layer === indianaCounties) {
-    indianaCountyLabels.addTo(map);
-    refreshIndianaCountyLabels();
-  }
-});
-map.on('overlayremove', (e) => {
-  if (e.layer === indianaCounties) {
-    indianaCountyLabels.clearLayers();
-  }
-});
-// [BHH: OVERLAYS – IN COUNTIES END]
 
 
 /*******************
@@ -1218,12 +1363,19 @@ const ovlTrack = document.getElementById('ovlTrack');
 function syncOverlayChecks() {
   if (!ovlOhio || !ovlCounties || !ovlWaterfowl || !ovlDraw || !ovlMarks || !ovlTrack) return;
 
-  if (currentState === 'IN') {
-    ovlOhio.checked     = map.hasLayer(indianaPublic);
-    ovlCounties.checked = map.hasLayer(indianaCounties);
+  // Public hunting: any state that has a registered layer
+  const pubLayer = PUBLIC_BY_STATE[currentState];
+  if (pubLayer) {
+    ovlOhio.checked = map.hasLayer(pubLayer);
   } else {
-    ovlOhio.checked     = map.hasLayer(ohioPublic);
-    ovlCounties.checked = map.hasLayer(ohioCounties);
+    ovlOhio.checked = false;
+  }
+
+  const countyEntry = COUNTY_REG[currentState];
+  if (countyEntry) {
+    ovlCounties.checked = map.hasLayer(countyEntry.counties);
+  } else {
+    ovlCounties.checked = false;
   }
 
   ovlWaterfowl.checked = map.hasLayer(waterfowlZones);
@@ -1233,44 +1385,38 @@ function syncOverlayChecks() {
 }
 
 
+
+
 ovlOhio.onchange = () => {
-  if (currentState === 'IN') {
-    if (ovlOhio.checked) {
-      indianaPublic.addTo(map);
-    } else {
-      map.removeLayer(indianaPublic);
-    }
+  const pubLayer = PUBLIC_BY_STATE[currentState];
+  if (!pubLayer) {
+    ovlOhio.checked = false;
+    return;
+  }
+  if (ovlOhio.checked) {
+    pubLayer.addTo(map);
   } else {
-    if (ovlOhio.checked) {
-      ohioPublic.addTo(map);
-    } else {
-      map.removeLayer(ohioPublic);
-    }
+    map.removeLayer(pubLayer);
   }
 };
+
+
 
 
 ovlCounties.onchange = () => {
-  if (currentState === 'IN') {
-    if (ovlCounties.checked) {
-      indianaCounties.addTo(map);
-      indianaCountyLabels.addTo(map);
-      refreshIndianaCountyLabels();
-    } else {
-      map.removeLayer(indianaCounties);
-      map.removeLayer(indianaCountyLabels);
-    }
+  const entry = COUNTY_REG[currentState];
+  if (!entry) return;
+
+  if (ovlCounties.checked) {
+    entry.counties.addTo(map);
+    entry.labels.addTo(map);
+    refreshAllCountyLabels();
   } else {
-    if (ovlCounties.checked) {
-      ohioCounties.addTo(map);
-      countyLabels.addTo(map);
-      refreshCountyLabels();
-    } else {
-      map.removeLayer(ohioCounties);
-      map.removeLayer(countyLabels);
-    }
+    map.removeLayer(entry.counties);
+    map.removeLayer(entry.labels);
   }
 };
+
 
 ovlWaterfowl.onchange = () => {
   updateWaterfowlVisibility();
@@ -2792,54 +2938,52 @@ const STATE_CFG = {
     hasCounties: true,
     hasWaterfowl: true
   },
-
-  // New “quick add” states – map view only for now
   MI: {
     name: 'Michigan',
     center: [44.1822, -84.5068], // approx center-of-state
     zoom: 7,
-    hasPublic: false,
-    hasCounties: false,
-    hasWaterfowl: false
+    hasPublic: true,
+    hasCounties: true,
+    hasWaterfowl: true
   },
   KY: {
     name: 'Kentucky',
     center: [37.8393, -84.2700],
     zoom: 7,
-    hasPublic: false,
-    hasCounties: false,
-    hasWaterfowl: false
+    hasPublic: true,
+    hasCounties: true,
+    hasWaterfowl: true
   },
   WV: {
     name: 'West Virginia',
     center: [38.5976, -80.4549],
     zoom: 7,
-    hasPublic: false,
-    hasCounties: false,
-    hasWaterfowl: false
+    hasPublic: true,
+    hasCounties: true,
+    hasWaterfowl: true
   },
   PA: {
     name: 'Pennsylvania',
     center: [40.9690, -77.7279],
     zoom: 7,
-    hasPublic: false,
-    hasCounties: false,
-    hasWaterfowl: false
+    hasPublic: true,
+    hasCounties: true,
+    hasWaterfowl: true
   },
   IL: {
   name: 'Illinois',
   center: [40.0000, -89.0000],
   zoom: 7,
-  hasPublic: false,
-  hasCounties: false,
+  hasPublic: true,
+  hasCounties: true,
   hasWaterfowl: false
 },
 WI: {
   name: 'Wisconsin',
   center: [44.5000, -89.5000],
   zoom: 7,
-  hasPublic: false,
-  hasCounties: false,
+  hasPublic: true,
+  hasCounties: true,
   hasWaterfowl: false
 }
 };
@@ -2894,33 +3038,39 @@ function onStateChanged() {
   if (ovlCounties)  ovlCounties.disabled  = !supportsCounties;
   if (ovlWaterfowl) ovlWaterfowl.disabled = !supportsWaterfowl;
 
-  // Remove all state-specific overlays (we only have OH + IN currently)
-  if (map.hasLayer(ohioPublic))          map.removeLayer(ohioPublic);
-  if (map.hasLayer(indianaPublic))       map.removeLayer(indianaPublic);
+  // Remove all state-specific overlays first
 
-  if (map.hasLayer(ohioCounties))        map.removeLayer(ohioCounties);
-  if (map.hasLayer(countyLabels))        map.removeLayer(countyLabels);
-  if (map.hasLayer(indianaCounties))     map.removeLayer(indianaCounties);
-  if (map.hasLayer(indianaCountyLabels)) map.removeLayer(indianaCountyLabels);
+  // Public hunting: remove all registered layers
+  Object.values(PUBLIC_BY_STATE).forEach(layer => {
+    if (layer && map.hasLayer(layer)) {
+      map.removeLayer(layer);
+    }
+  });
+
+  // Counties for all supported states
+  Object.keys(COUNTY_REG).forEach(code => {
+    const entry = COUNTY_REG[code];
+    if (!entry) return;
+    if (map.hasLayer(entry.counties)) map.removeLayer(entry.counties);
+    if (map.hasLayer(entry.labels))   map.removeLayer(entry.labels);
+  });
 
   // Re-add for the new state based on current checkboxes
+
+  // Public hunting
   if (wantedPublic && ovlOhio && !ovlOhio.disabled) {
-    if (currentState === 'IN') {
-      indianaPublic.addTo(map);
-    } else if (currentState === 'OH') {
-      ohioPublic.addTo(map);
-    }
+    const pubLayer = PUBLIC_BY_STATE[currentState];
+    if (pubLayer) pubLayer.addTo(map);
   }
 
+
+  // Counties
   if (wantedCounties && ovlCounties && !ovlCounties.disabled) {
-    if (currentState === 'IN') {
-      indianaCounties.addTo(map);
-      indianaCountyLabels.addTo(map);
-      refreshIndianaCountyLabels();
-    } else if (currentState === 'OH') {
-      ohioCounties.addTo(map);
-      countyLabels.addTo(map);
-      refreshCountyLabels();
+    const entry = COUNTY_REG[currentState];
+    if (entry) {
+      entry.counties.addTo(map);
+      entry.labels.addTo(map);
+      refreshAllCountyLabels();
     }
   }
 
@@ -2929,7 +3079,7 @@ function onStateChanged() {
 
   // Make sure our overlay checkboxes match what's actually on the map
   syncOverlayChecks();
-}  // ← this closing brace was missing
+}
 
 function setState(code, save = true) {
   const c = (code || 'OH').toUpperCase();
@@ -2962,6 +3112,7 @@ if (stateApplyBtn) {
   };
 }
 // [BHH: STATE – LOGIC END]
+
 
 
 
