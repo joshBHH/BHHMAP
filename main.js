@@ -4,6 +4,8 @@
 // [BHH: MAP INIT START]
 const map = L.map('map').setView([40.4173, -82.9071], 7);
 
+const MAPTILER_KEY = 'VLOZCnjQYBtgpZ3BXBK3'; // same key you use for tiles
+
 // MapTiler basemaps (replace key if needed)
 const basic = L.tileLayer(
   'https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=VLOZCnjQYBtgpZ3BXBK3',
@@ -3434,6 +3436,98 @@ ovlTrack.onchange =
   () => ovlTrack.checked
     ? trackLayer.addTo(map)
     : map.removeLayer(trackLayer);
+
+// ============ SIMPLE PLACE / LAT-LNG SEARCH ============
+
+// Expecting an <input id="searchInput"> and <button id="searchGo"> in your HTML
+const searchInput = document.getElementById('searchInput');
+const searchBtn   = document.getElementById('searchGo');
+
+function parseLatLngString(str) {
+  if (!str) return null;
+  const cleaned = str.trim().replace(/\s+/g, ' ');
+
+  // Try "lat,lng"
+  let parts = cleaned.split(',');
+  if (parts.length === 2) {
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+      return { lat, lng };
+    }
+  }
+
+  // Try "lat lng"
+  parts = cleaned.split(' ');
+  if (parts.length === 2) {
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+      return { lat, lng };
+    }
+  }
+
+  return null;
+}
+
+async function runSearch(query) {
+  query = (query || '').trim();
+  if (!query) return;
+
+  // 1) If it looks like coordinates, just go there
+  const coords = parseLatLngString(query);
+  if (coords) {
+    const { lat, lng } = coords;
+    map.setView([lat, lng], Math.max(map.getZoom(), 15));
+    L.marker([lat, lng])
+      .addTo(map)
+      .bindPopup(`${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+      .openPopup();
+    return;
+  }
+
+  // 2) Otherwise, do a simple place search (no state bias, no building/POI guarantee)
+  try {
+    const url =
+      'https://nominatim.openstreetmap.org/search' +
+      '?format=json&limit=1&q=' +
+      encodeURIComponent(query);
+
+    const res = await fetch(url, {
+      headers: { 'Accept-Language': 'en' }
+    });
+
+    if (!res.ok) throw new Error('Geocoding error');
+    const results = await res.json();
+    if (!results.length) {
+      alert('No results found for: ' + query);
+      return;
+    }
+
+    const hit = results[0];
+    const lat = parseFloat(hit.lat);
+    const lon = parseFloat(hit.lon);
+
+    map.setView([lat, lon], 14);
+    L.marker([lat, lon])
+      .addTo(map)
+      .bindPopup(hit.display_name || query)
+      .openPopup();
+  } catch (e) {
+    console.warn('Search failed', e);
+    alert('Search failed. Try a different place name or coordinates.');
+  }
+}
+
+// Wire up the input and button
+if (searchInput && searchBtn) {
+  searchBtn.addEventListener('click', () => runSearch(searchInput.value));
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') runSearch(searchInput.value);
+  });
+}
+
 
 
 /*******************
